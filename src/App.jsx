@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 // ─── Supabase config ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://vjgvlgwetrgikrlkqvrn.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZ3ZsZ3dldHJnaWtybGtxdnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMzc0MzYsImV4cCI6MjA5MzgxMzQzNn0.Vp4VqMKjCwE1PCu_ogUe537LrCepNzo8E-_GYr6LMNc";
-
 const headers = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
@@ -121,8 +120,9 @@ const Auth = {
     if (existing) return { error: "Er bestaat al een account met dit e-mailadres." };
     const hash = await hashPassword(pw);
     try {
+      // Nieuw account krijgt status 'pending' — wacht op goedkeuring beheerder
       const teacher = await DB.createTeacher(name.trim(), email.toLowerCase().trim(), hash);
-      return { ok: true, teacher };
+      return { ok: true, pending: true, teacher };
     } catch (e) {
       return { error: e.message };
     }
@@ -133,6 +133,8 @@ const Auth = {
     if (!teacher) return { error: "Geen account gevonden met dit e-mailadres." };
     const hash = await hashPassword(pw);
     if (teacher.password_hash !== hash) return { error: "Onjuist wachtwoord." };
+    if (teacher.status === "pending") return { error: "Je aanvraag is nog in behandeling. Je ontvangt een e-mail zodra je account is goedgekeurd." };
+    if (teacher.status === "rejected") return { error: "Je aanvraag is helaas afgekeurd. Neem contact op met de beheerder voor meer informatie." };
     return { ok: true, teacher };
   },
 };
@@ -581,10 +583,35 @@ function TeacherAuthGate({ onBack }) {
       : await Auth.register(name, email, pw);
     setLoading(false);
     if (result.error) return setError(result.error);
+    if (result.pending) {
+      setMode("pending");
+      return;
+    }
     setTeacher(result.teacher);
   };
 
   if (teacher) return <TeacherView teacher={teacher} onLogout={() => setTeacher(null)} />;
+
+  // Aanvraag ingediend — wacht op goedkeuring
+  if (mode === "pending") return (
+    <div style={{ flex:1, overflowY:"auto", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <div style={{ width:"100%", maxWidth:400, textAlign:"center" }}>
+        <div style={{ width:64, height:64, borderRadius:20, background:"#FEF9C3", display:"flex", alignItems:"center", justifyContent:"center", fontSize:30, margin:"0 auto 16px" }}>⏳</div>
+        <div style={{ fontWeight:700, fontSize:22, color:C.text, marginBottom:8 }}>Aanvraag ingediend!</div>
+        <Card style={{ padding:"20px 22px", textAlign:"left" }}>
+          <p style={{ fontSize:14, color:C.sub, lineHeight:1.7, margin:"0 0 12px" }}>
+            Je aanvraag voor een docentaccount is ontvangen en wordt beoordeeld door de beheerder.
+          </p>
+          <p style={{ fontSize:14, color:C.sub, lineHeight:1.7, margin:0 }}>
+            Je ontvangt een <strong style={{ color:C.text }}>e-mail</strong> zodra je aanvraag is goedgekeurd of afgekeurd.
+          </p>
+        </Card>
+        <button onClick={() => { setMode("login"); setError(""); }} style={{ marginTop:16, background:"none", border:"none", color:C.blue, fontWeight:600, cursor:"pointer", fontSize:13 }}>
+          ← Terug naar inloggen
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ flex: 1, overflowY: "auto", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -1069,6 +1096,244 @@ function StudentView() {
   );
 }
 
+// ─── Admin Login ──────────────────────────────────────────────────────────────
+function AdminLogin({ onLogin }) {
+  const [secret,  setSecret]  = useState("");
+  const [error,   setError]   = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    setError(""); setLoading(true);
+    const res = await fetch("/api/admin-get-teachers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminSecret: secret }),
+    });
+    setLoading(false);
+    if (!res.ok) return setError("Onjuist beheerderswachtwoord.");
+    onLogin(secret);
+  };
+
+  return (
+    <div style={{ flex:1, background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <div style={{ width:"100%", maxWidth:380 }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
+          <div style={{ width:56, height:56, borderRadius:16, background:"#1e293b", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, margin:"0 auto 14px" }}>🔐</div>
+          <div style={{ fontWeight:700, fontSize:22, color:C.text }}>Beheerder inloggen</div>
+          <div style={{ fontSize:13, color:C.sub, marginTop:4 }}>Alleen toegankelijk voor beheerders</div>
+        </div>
+        <Card style={{ padding:"22px 20px" }}>
+          <Field label="Beheerderswachtwoord">
+            <input type="password" value={secret} onChange={e => setSecret(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && submit()}
+              placeholder="Voer het beheerderswachtwoord in"
+              style={{ width:"100%", border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 14px", fontSize:15, fontFamily:"inherit", color:C.text, outline:"none", background:C.surface, boxSizing:"border-box" }}
+              onFocus={e => { e.target.style.borderColor=C.blue; e.target.style.boxShadow=`0 0 0 3px ${C.blueLight}`; }}
+              onBlur={e => { e.target.style.borderColor=C.border; e.target.style.boxShadow="none"; }}
+            />
+          </Field>
+          <ErrorBox msg={error} />
+          <PrimaryBtn full disabled={loading} onClick={submit}>
+            {loading ? "Controleren…" : "Inloggen →"}
+          </PrimaryBtn>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+function AdminView({ onBack }) {
+  const [adminSecret, setAdminSecret] = useState(null);
+  const [teachers,    setTeachers]    = useState([]);
+  const [loading,     setLoading]     = useState(false);
+  const [toast,       setToast]       = useState(null);
+  const [confirmDel,  setConfirmDel]  = useState(null); // teacher object to confirm delete
+  const [tab,         setTab]         = useState("pending"); // pending | all
+
+  const showToast = (msg, type = "ok") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const loadTeachers = async (secret) => {
+    setLoading(true);
+    const res = await fetch("/api/admin-get-teachers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminSecret: secret }),
+    });
+    const data = await res.json();
+    setTeachers(Array.isArray(data) ? data : []);
+    setLoading(false);
+  };
+
+  const handleLogin = (secret) => {
+    setAdminSecret(secret);
+    loadTeachers(secret);
+  };
+
+  const doAction = async (action, teacher) => {
+    if (action === "delete") {
+      setConfirmDel(teacher);
+      return;
+    }
+    const res = await fetch("/api/admin-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminSecret, action, teacherId: teacher.id }),
+    });
+    const data = await res.json();
+    if (!res.ok) return showToast("Actie mislukt: " + data.error, "error");
+    const emailMsg = data.emailStatus === "failed" ? " (e-mail kon niet worden verstuurd)" : "";
+    showToast(action === "approve" ? `✅ ${teacher.name} goedgekeurd${emailMsg}` : `❌ ${teacher.name} afgekeurd${emailMsg}`, action === "approve" ? "ok" : "warn");
+    loadTeachers(adminSecret);
+  };
+
+  const confirmDelete = async () => {
+    const teacher = confirmDel;
+    setConfirmDel(null);
+    const res = await fetch("/api/admin-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminSecret, action: "delete", teacherId: teacher.id }),
+    });
+    if (!res.ok) return showToast("Verwijderen mislukt", "error");
+    showToast(`🗑️ ${teacher.name} verwijderd`);
+    loadTeachers(adminSecret);
+  };
+
+  if (!adminSecret) return <AdminLogin onLogin={handleLogin} />;
+
+  const pending = teachers.filter(t => t.status === "pending")
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  const all = [...teachers].sort((a, b) => a.name.localeCompare(b.name, "nl"));
+
+  const statusBadge = (s) => {
+    const map = { pending: ["#FEF9C3","#92400e","In behandeling"], active: [C.greenLight, C.green, "Actief"], rejected: [C.redLight, C.red, "Afgekeurd"] };
+    const [bg, col, label] = map[s] || [C.border, C.sub, s];
+    return <span style={{ background:bg, color:col, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:600 }}>{label}</span>;
+  };
+
+  const emailBadge = (s) => {
+    if (!s) return null;
+    return <span style={{ background: s === "sent" ? C.greenLight : C.redLight, color: s === "sent" ? C.green : C.red, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:600 }}>{s === "sent" ? "✓ Verstuurd" : "✗ Mislukt"}</span>;
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", background:C.bg, padding:24 }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position:"fixed", top:16, right:16, zIndex:2000,
+          background: toast.type === "error" ? C.redLight : toast.type === "warn" ? "#FEF9C3" : C.greenLight,
+          color: toast.type === "error" ? C.red : toast.type === "warn" ? "#92400e" : C.green,
+          border:`1.5px solid ${toast.type === "error" ? C.red : toast.type === "warn" ? "#FDE047" : C.green}`,
+          borderRadius:10, padding:"12px 18px", fontSize:14, fontWeight:500,
+          boxShadow:"0 4px 16px rgba(15,21,35,0.12)", maxWidth:340,
+        }}>{toast.msg}</div>
+      )}
+
+      {/* Confirm delete modal */}
+      {confirmDel && (
+        <div onClick={() => setConfirmDel(null)} style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(15,21,35,0.5)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:C.surface, borderRadius:16, padding:"24px 22px", maxWidth:380, width:"100%", boxShadow:"0 8px 32px rgba(15,21,35,0.15)" }}>
+            <div style={{ fontWeight:700, fontSize:17, color:C.text, marginBottom:8 }}>Account verwijderen</div>
+            <p style={{ fontSize:14, color:C.sub, lineHeight:1.6, marginBottom:20 }}>
+              Weet je zeker dat je het account van <strong style={{ color:C.text }}>{confirmDel.name}</strong> ({confirmDel.email}) wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+            </p>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={confirmDelete} style={{ flex:1, background:C.red, color:C.white, border:"none", borderRadius:8, padding:"10px", fontSize:13, fontWeight:600, cursor:"pointer" }}>Definitief verwijderen</button>
+              <button onClick={() => setConfirmDel(null)} style={{ flex:1, background:"transparent", border:`1.5px solid ${C.border}`, borderRadius:8, padding:"10px", fontSize:13, cursor:"pointer", color:C.sub }}>Annuleer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ maxWidth:900, margin:"0 auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+          <div>
+            <h2 style={{ margin:"0 0 4px", fontSize:24, fontWeight:700, color:C.text }}>Beheerderspanel</h2>
+            <div style={{ fontSize:13, color:C.sub }}>Beheer docentaccounts en aanvragen</div>
+          </div>
+          <GhostBtn onClick={onBack}>← Terug</GhostBtn>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:4, marginBottom:20, background:C.surface, borderRadius:10, padding:4, border:`1px solid ${C.border}`, width:"fit-content" }}>
+          {[["pending", `⏳ Aanvragen (${pending.length})`], ["all", `👥 Alle accounts (${all.length})`]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{
+              padding:"7px 18px", borderRadius:8, border:"none",
+              background: tab === key ? C.ink : "transparent",
+              color: tab === key ? C.white : C.sub,
+              fontWeight: tab === key ? 600 : 400,
+              fontSize:13, cursor:"pointer", transition:"all 0.15s",
+            }}>{label}</button>
+          ))}
+        </div>
+
+        {loading ? <Spinner label="Accounts laden…" /> : tab === "pending" ? (
+          /* ── Pending aanvragen ── */
+          pending.length === 0 ? (
+            <Card style={{ padding:"40px 24px", textAlign:"center" }}>
+              <div style={{ fontSize:28, marginBottom:10 }}>✅</div>
+              <div style={{ fontWeight:600, fontSize:16, color:C.text }}>Geen openstaande aanvragen</div>
+              <div style={{ fontSize:13, color:C.sub, marginTop:4 }}>Alle aanvragen zijn verwerkt.</div>
+            </Card>
+          ) : pending.map(t => (
+            <Card key={t.id} style={{ marginBottom:10, padding:"16px 18px" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:99, background:C.blueLight, color:C.blue, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:15, flexShrink:0 }}>
+                    {t.name[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:14, color:C.text }}>{t.name}</div>
+                    <div style={{ fontSize:12, color:C.sub }}>{t.email}</div>
+                    <div style={{ fontSize:11, color:C.sub, marginTop:2 }}>
+                      Aangevraagd op {new Date(t.created_at).toLocaleDateString("nl-NL", { day:"numeric", month:"long", year:"numeric" })}
+                      {t.email_status && <span style={{ marginLeft:8 }}>{emailBadge(t.email_status)}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                  <button onClick={() => doAction("approve", t)} style={{ background:C.greenLight, color:C.green, border:`1.5px solid ${C.green}`, borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer" }}>✓ Goedkeuren</button>
+                  <button onClick={() => doAction("reject", t)} style={{ background:"#FEF9C3", color:"#92400e", border:"1.5px solid #FDE047", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer" }}>✗ Afkeuren</button>
+                  <button onClick={() => doAction("delete", t)} style={{ background:C.redLight, color:C.red, border:`1.5px solid ${C.red}`, borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer" }}>🗑 Verwijderen</button>
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          /* ── Alle accounts ── */
+          all.map(t => (
+            <Card key={t.id} style={{ marginBottom:8, padding:"14px 18px" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:34, height:34, borderRadius:99, background:C.blueLight, color:C.blue, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:13, flexShrink:0 }}>
+                    {t.name[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:C.text }}>{t.name}</div>
+                    <div style={{ fontSize:12, color:C.sub }}>{t.email}</div>
+                    <div style={{ display:"flex", gap:6, marginTop:4, alignItems:"center" }}>
+                      {statusBadge(t.status)}
+                      <span style={{ fontSize:11, color:C.sub }}>
+                        Aangemaakt op {new Date(t.created_at).toLocaleDateString("nl-NL", { day:"numeric", month:"short", year:"numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => doAction("delete", t)} style={{ background:C.redLight, color:C.red, border:`1.5px solid ${C.red}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>🗑 Verwijderen</button>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Logo header ──────────────────────────────────────────────────────────────
 function Logo({ right }) {
   return (
@@ -1143,7 +1408,7 @@ export default function App() {
   const getPage = () => {
     try {
       const p = new URLSearchParams(window.location.search).get("page");
-      if (p === "teacher" || p === "student") return p;
+      if (p === "teacher" || p === "student" || p === "admin") return p;
     } catch {}
     return "landing";
   };
@@ -1168,6 +1433,11 @@ export default function App() {
       </div>
       <style>{`* { box-sizing: border-box; } body { margin: 0; } ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 99px; }`}</style>
     </div>
+  );
+
+  if (page === "admin") return shell(
+    <Logo right={<GhostBtn onClick={() => navigate("landing")} style={{ fontSize: 12 }}>← Startpagina</GhostBtn>} />,
+    <AdminView onBack={() => navigate("landing")} />
   );
 
   if (page === "teacher") return shell(
