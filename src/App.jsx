@@ -831,44 +831,128 @@ function TeacherView({ teacher, onLogout }) {
     if (aantalGeselecteerd === 0) return;
     setExportLoading(true);
 
-    // Bouw lijst van geselecteerde vragen
-    const vragen = [];
-    subs.forEach(sub => {
-      if (!sub.quiz?.questions) return;
-      sub.quiz.questions.forEach((q, qi) => {
-        const key = `${sub.id}-${qi}`;
-        if (selectedQuestions[key]) {
-          vragen.push({
-            artikelTitel: sub.quiz.title || "Onbekend artikel",
-            vraag: q.question,
-            opties: q.options,
-            correct: q.correct,
-          });
-        }
-      });
-    });
-
     try {
-      const res = await fetch("/api/export-word", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          klasnaam: selected.name,
-          vragen,
-          datum: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
-        }),
+      // Laad docx library via script tag
+      if (!window.docx) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, BorderStyle } = window.docx;
+
+      // Bouw lijst van geselecteerde vragen
+      const vragen = [];
+      subs.forEach(sub => {
+        if (!sub.quiz?.questions) return;
+        sub.quiz.questions.forEach((q, qi) => {
+          const key = `${sub.id}-${qi}`;
+          if (selectedQuestions[key]) {
+            vragen.push({
+              artikelTitel: sub.quiz.title || "Onbekend artikel",
+              vraag: q.question,
+              opties: q.options,
+              correct: q.correct,
+            });
+          }
+        });
       });
 
-      if (!res.ok) throw new Error("Export mislukt");
+      const vandaag = new Date().toLocaleDateString("nl-NL", {
+        day: "numeric", month: "long", year: "numeric"
+      });
 
-      const blob = await res.blob();
+      const children = [];
+
+      // Titel
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: `Toetsvragen — ${selected.name}`, bold: true, size: 36 })],
+          spacing: { after: 120 },
+        })
+      );
+
+      // Datum
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: `Datum: ${vandaag}`, color: "666666", size: 22 })],
+          spacing: { after: 400 },
+        })
+      );
+
+      // Scheidingslijn
+      children.push(
+        new Paragraph({
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "3B6FF0", space: 1 } },
+          spacing: { after: 400 },
+          children: [],
+        })
+      );
+
+      // Vragen
+      vragen.forEach((v, index) => {
+        // Artikeltitel als context
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `Artikel: ${v.artikelTitel}`, color: "888888", size: 18, italics: true })],
+            spacing: { before: index === 0 ? 0 : 360, after: 80 },
+          })
+        );
+
+        // Vraagnummer en tekst
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `${index + 1}.  ${v.vraag}`, bold: true, size: 24 })],
+            spacing: { after: 120 },
+          })
+        );
+
+        // Antwoordopties
+        v.opties.forEach(optie => {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `       ${optie}`, size: 22 })],
+              spacing: { after: 80 },
+            })
+          );
+        });
+      });
+
+      const doc = new Document({
+        styles: {
+          default: { document: { run: { font: "Arial", size: 24 } } },
+          paragraphStyles: [{
+            id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal",
+            run: { size: 36, bold: true, font: "Arial", color: "0F1523" },
+            paragraph: { spacing: { before: 240, after: 240 }, outlineLevel: 0 },
+          }],
+        },
+        sections: [{
+          properties: {
+            page: {
+              size: { width: 11906, height: 16838 },
+              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+            },
+          },
+          children,
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `Toetsvragen_${selected.name.replace(/\s+/g, "_")}.docx`;
       a.click();
       URL.revokeObjectURL(url);
+
     } catch (err) {
+      console.error("Export fout:", err);
       alert("Export mislukt: " + err.message);
     }
 
