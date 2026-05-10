@@ -429,7 +429,7 @@ function ArticleModal({ sub, onClose }) {
 }
 
 // ─── QuizCard ─────────────────────────────────────────────────────────────────
-function QuizCard({ sub }) {
+function QuizCard({ sub, selectedQuestions, onToggleQuestion }) {
   const [open,      setOpen]      = useState(false);
   const [ans,       setAns]       = useState({});
   const [done,      setDone]      = useState(false);
@@ -521,16 +521,35 @@ function QuizCard({ sub }) {
             </div>
           </div>
 
-          {quiz.questions.map((q, qi) => (
-            <div key={qi} style={{ marginBottom: 18 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: C.text, marginBottom: 8, lineHeight: 1.4 }}>
-                {qi + 1}. {q.question}
+          {quiz.questions.map((q, qi) => {
+            const key = `${sub.id}-${qi}`;
+            const isSelected = selectedQuestions?.[key] || false;
+            return (
+            <div key={qi} style={{
+              marginBottom: 18,
+              background: isSelected ? C.blueLight : "transparent",
+              borderRadius: 8,
+              padding: isSelected ? "10px 12px" : "0",
+              border: isSelected ? `1.5px solid ${C.blue}` : "none",
+              transition: "all 0.15s",
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+                {/* Checkbox */}
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggleQuestion?.(key)}
+                  style={{ marginTop: 3, width: 16, height: 16, cursor: "pointer", accentColor: C.blue, flexShrink: 0 }}
+                />
+                <div style={{ fontWeight: 600, fontSize: 14, color: C.text, lineHeight: 1.4, flex: 1 }}>
+                  {qi + 1}. {q.question}
+                </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginLeft: 26 }}>
                 {q.options.map((opt, oi) => {
                   let bg = C.surfaceAlt, border = C.border, col = C.text, fw = 400;
-                  if (ans[qi] === oi)                           { bg = C.blueLight;  border = C.blue;  col = C.blue;  fw = 600; }
-                  if (done && oi === q.correct)                 { bg = C.greenLight; border = C.green; col = C.green; fw = 600; }
+                  if (ans[qi] === oi)                            { bg = C.blueLight;  border = C.blue;  col = C.blue;  fw = 600; }
+                  if (done && oi === q.correct)                  { bg = C.greenLight; border = C.green; col = C.green; fw = 600; }
                   if (done && ans[qi] === oi && oi !== q.correct){ bg = C.redLight;   border = C.red;   col = C.red;   fw = 600; }
                   return (
                     <button key={oi} onClick={() => !done && setAns(a => ({ ...a, [qi]: oi }))} style={{
@@ -543,7 +562,8 @@ function QuizCard({ sub }) {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {!done ? (
             <PrimaryBtn onClick={() => setDone(true)} disabled={!allAnswered}>
@@ -686,15 +706,17 @@ function TeacherAuthGate({ onBack }) {
 
 // ─── TEACHER VIEW ─────────────────────────────────────────────────────────────
 function TeacherView({ teacher, onLogout }) {
-  const [rooms,          setRooms]         = useState([]);
-  const [selected,       setSelected]      = useState(null);
-  const [subs,           setSubs]          = useState([]);
-  const [newName,        setNewName]       = useState("");
-  const [creating,       setCreating]      = useState(false);
-  const [loading,        setLoading]       = useState(true);
-  const [loadingSubs,    setLoadingSubs]   = useState(false);
-  const [roomError,      setRoomError]     = useState("");
-  const [showStudentList,setShowStudentList] = useState(false);
+  const [rooms,            setRooms]           = useState([]);
+  const [selected,         setSelected]        = useState(null);
+  const [subs,             setSubs]            = useState([]);
+  const [newName,          setNewName]         = useState("");
+  const [creating,         setCreating]        = useState(false);
+  const [loading,          setLoading]         = useState(true);
+  const [loadingSubs,      setLoadingSubs]     = useState(false);
+  const [roomError,        setRoomError]       = useState("");
+  const [showStudentList,  setShowStudentList] = useState(false);
+  const [selectedQuestions,setSelectedQuestions] = useState({}); // { "subId-qi": true }
+  const [exportLoading,    setExportLoading]   = useState(false);
 
   // Sluit de leerlingenlijst als je erbuiten klikt
   useEffect(() => {
@@ -793,6 +815,66 @@ function TeacherView({ teacher, onLogout }) {
     if (selected?.id === room.id) setSelected(s => ({ ...s, paused: newPaused }));
   };
 
+  // Reset geselecteerde vragen als je van klas wisselt
+  const selectRoom = (room) => {
+    setSelected(room);
+    setSelectedQuestions({});
+  };
+
+  const toggleQuestion = (key) => {
+    setSelectedQuestions(q => ({ ...q, [key]: !q[key] }));
+  };
+
+  const aantalGeselecteerd = Object.values(selectedQuestions).filter(Boolean).length;
+
+  const exportWord = async () => {
+    if (aantalGeselecteerd === 0) return;
+    setExportLoading(true);
+
+    // Bouw lijst van geselecteerde vragen
+    const vragen = [];
+    subs.forEach(sub => {
+      if (!sub.quiz?.questions) return;
+      sub.quiz.questions.forEach((q, qi) => {
+        const key = `${sub.id}-${qi}`;
+        if (selectedQuestions[key]) {
+          vragen.push({
+            artikelTitel: sub.quiz.title || "Onbekend artikel",
+            vraag: q.question,
+            opties: q.options,
+            correct: q.correct,
+          });
+        }
+      });
+    });
+
+    try {
+      const res = await fetch("/api/export-word", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          klasnaam: selected.name,
+          vragen,
+          datum: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Export mislukt");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Toetsvragen_${selected.name.replace(/\s+/g, "_")}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Export mislukt: " + err.message);
+    }
+
+    setExportLoading(false);
+  };
+
   if (loading) return <Spinner label="Klassen laden…" />;
 
   return (
@@ -834,7 +916,7 @@ function TeacherView({ teacher, onLogout }) {
             </div>
           )}
           {rooms.map(room => (
-            <div key={room.id} onClick={() => setSelected(room)} style={{
+            <div key={room.id} onClick={() => selectRoom(room)} style={{
               padding: "10px 12px", borderRadius: 10, marginBottom: 4, cursor: "pointer",
               background: selected?.id === room.id ? C.blueLight : "transparent",
               border: `1.5px solid ${selected?.id === room.id ? C.blue : "transparent"}`,
@@ -1045,6 +1127,33 @@ function TeacherView({ teacher, onLogout }) {
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
 
+            {/* Export Word knop */}
+            {subs.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontSize: 13, color: C.sub }}>
+                  {aantalGeselecteerd > 0
+                    ? <span style={{ color: C.blue, fontWeight: 600 }}>{aantalGeselecteerd} vraag{aantalGeselecteerd !== 1 ? "en" : ""} geselecteerd</span>
+                    : "Selecteer vragen via de checkboxes om te exporteren"}
+                </div>
+                <button
+                  onClick={exportWord}
+                  disabled={aantalGeselecteerd === 0 || exportLoading}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
+                    color: aantalGeselecteerd === 0 ? C.sub : C.white,
+                    border: "none", borderRadius: 10,
+                    padding: "9px 18px", fontSize: 13, fontWeight: 600,
+                    cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
+                    boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(59,111,240,0.25)",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
+                </button>
+              </div>
+            )}
+
             {loadingSubs ? <Spinner label="Inleveringen ophalen…" /> :
               subs.length === 0 ? (
                 <Card style={{ padding: "40px 24px", textAlign: "center" }}>
@@ -1056,7 +1165,7 @@ function TeacherView({ teacher, onLogout }) {
                   </div>
                   <div style={{ fontSize: 12, color: C.sub, marginTop: 8 }}>Ververst automatisch elke 5 seconden</div>
                 </Card>
-              ) : subs.map(s => <QuizCard key={s.id} sub={s} />)
+              ) : subs.map(s => <QuizCard key={s.id} sub={s} selectedQuestions={selectedQuestions} onToggleQuestion={toggleQuestion} />)
             }
           </>
         )}
