@@ -854,6 +854,7 @@ function TeacherView({ teacher, onLogout }) {
           if (selectedQuestions[key]) {
             vragen.push({
               artikelTitel: sub.quiz.title || "Onbekend artikel",
+              samenvatting: sub.quiz.summary || "",
               vraag: q.question,
               opties: q.options,
               correct: q.correct,
@@ -903,6 +904,16 @@ function TeacherView({ teacher, onLogout }) {
             spacing: { before: index === 0 ? 0 : 360, after: 80 },
           })
         );
+
+        // Samenvatting als context boven de vraag
+        if (v.samenvatting) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: v.samenvatting, size: 22, color: "333333" })],
+              spacing: { after: 100 },
+            })
+          );
+        }
 
         // Vraagnummer en tekst
         children.push(
