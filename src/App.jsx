@@ -68,6 +68,14 @@ const DB = {
     });
   },
 
+  async pauseRoom(id, paused) {
+    await fetch(`${SUPABASE_URL}/rest/v1/rooms?id=eq.${id}`, {
+      method: "PATCH",
+      headers: { ...headers, "Prefer": "return=minimal" },
+      body: JSON.stringify({ paused }),
+    });
+  },
+
   // Inleveringen
   async getSubmissions(roomCode) {
     const res = await fetch(
@@ -777,6 +785,14 @@ function TeacherView({ teacher, onLogout }) {
     if (selected?.id === room.id) { setSelected(null); setSubs([]); }
   };
 
+  const togglePause = async (room, e) => {
+    e.stopPropagation();
+    const newPaused = !room.paused;
+    await DB.pauseRoom(room.id, newPaused);
+    setRooms(r => r.map(x => x.id === room.id ? { ...x, paused: newPaused } : x));
+    if (selected?.id === room.id) setSelected(s => ({ ...s, paused: newPaused }));
+  };
+
   if (loading) return <Spinner label="Klassen laden…" />;
 
   return (
@@ -823,16 +839,25 @@ function TeacherView({ teacher, onLogout }) {
               background: selected?.id === room.id ? C.blueLight : "transparent",
               border: `1.5px solid ${selected?.id === room.id ? C.blue : "transparent"}`,
               transition: "all 0.15s",
+              opacity: room.paused ? 0.7 : 1,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: selected?.id === room.id ? C.blue : C.text }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: selected?.id === room.id ? C.blue : C.text, display: "flex", alignItems: "center", gap: 6 }}>
                   {room.name}
+                  {room.paused && <span style={{ fontSize: 10, background: C.redLight, color: C.red, borderRadius: 99, padding: "1px 6px", fontWeight: 600 }}>Gepauzeerd</span>}
                 </div>
-                <span
-                  onClick={e => { e.stopPropagation(); deleteRoom(room); }}
-                  title="Verwijderen"
-                  style={{ fontSize: 13, color: C.sub, cursor: "pointer", opacity: 0.5, padding: "0 2px" }}
-                >✕</span>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <span
+                    onClick={e => togglePause(room, e)}
+                    title={room.paused ? "Deblokkeren" : "Pauzeren"}
+                    style={{ fontSize: 13, cursor: "pointer", padding: "0 2px", opacity: 0.6 }}
+                  >{room.paused ? "▶️" : "⏸️"}</span>
+                  <span
+                    onClick={e => { e.stopPropagation(); deleteRoom(room); }}
+                    title="Verwijderen"
+                    style={{ fontSize: 13, color: C.sub, cursor: "pointer", opacity: 0.5, padding: "0 2px" }}
+                  >✕</span>
+                </div>
               </div>
               <div style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, letterSpacing: 3, marginTop: 2, color: selected?.id === room.id ? C.blue : C.sub }}>
                 {room.code}
@@ -888,24 +913,47 @@ function TeacherView({ teacher, onLogout }) {
           <>
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-                <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, color: C.text }}>{selected.name}</h2>
-                {subs.length > 0 && (
+                <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, color: C.text }}>
+                  {selected.name}
+                  {selected.paused && (
+                    <span style={{ marginLeft: 10, fontSize: 13, background: C.redLight, color: C.red, borderRadius: 99, padding: "3px 10px", fontWeight: 600, verticalAlign: "middle" }}>
+                      ⏸ Gepauzeerd
+                    </span>
+                  )}
+                </h2>
+                <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={downloadAllScreenshots}
-                    disabled={downloading}
+                    onClick={() => togglePause(selected, { stopPropagation: () => {} })}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 8,
-                      background: downloading ? C.border : C.surface,
-                      color: downloading ? C.sub : C.blue,
-                      border: `1.5px solid ${downloading ? C.border : C.blue}`,
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      background: selected.paused ? C.greenLight : C.redLight,
+                      color: selected.paused ? C.green : C.red,
+                      border: `1.5px solid ${selected.paused ? C.green : C.red}`,
                       borderRadius: 10, padding: "8px 16px",
-                      fontSize: 13, fontWeight: 600, cursor: downloading ? "not-allowed" : "pointer",
+                      fontSize: 13, fontWeight: 600, cursor: "pointer",
                       transition: "all 0.15s",
                     }}
                   >
-                    {downloading ? "⏳ Downloaden…" : "⬇️ Download alle screenshots"}
+                    {selected.paused ? "▶️ Deblokkeren" : "⏸️ Pauzeren"}
                   </button>
-                )}
+                  {subs.length > 0 && (
+                    <button
+                      onClick={downloadAllScreenshots}
+                      disabled={downloading}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 8,
+                        background: downloading ? C.border : C.surface,
+                        color: downloading ? C.sub : C.blue,
+                        border: `1.5px solid ${downloading ? C.border : C.blue}`,
+                        borderRadius: 10, padding: "8px 16px",
+                        fontSize: 13, fontWeight: 600, cursor: downloading ? "not-allowed" : "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {downloading ? "⏳ Downloaden…" : "⬇️ Download alle screenshots"}
+                    </button>
+                  )}
+                </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13, color: C.sub }}>Code voor leerlingen:</span>
@@ -1040,6 +1088,7 @@ function StudentView() {
     const uc = code.toUpperCase().trim();
     const room = await DB.getRoomByCode(uc);
     if (!room)         return setError("Onbekende klascode. Vraag je docent om de juiste code.");
+    if (room.paused)   return setError("De inlevering voor deze klas is tijdelijk gesloten door de docent. Probeer het later opnieuw.");
     if (!name.trim())  return setError("Vul je naam in.");
     if (!file)         return setError("Kies een screenshot van een nieuwsbericht.");
 
