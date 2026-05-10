@@ -703,14 +703,12 @@ function TeacherView({ teacher, onLogout }) {
     setDownloading(true);
 
     try {
-      // Laad JSZip dynamisch
-      const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+      const JSZip = require("jszip");
       const zip = new JSZip();
       const folder = zip.folder(selected.name);
 
       subs.forEach((sub, i) => {
         if (!sub.image_base64) return;
-        // Bestandsnaam: achternaam_voornaam_nummer.jpg
         const naamDelen = sub.student_name.trim().split(" ");
         const achternaam = naamDelen.pop();
         const voornaam = naamDelen.join("_") || "onbekend";
