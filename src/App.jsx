@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 
 // ─── Supabase config ──────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://vjgvlgwetrgikrlkqvrn.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZ3ZsZ3dldHJnaWtybGtxdnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMzc0MzYsImV4cCI6MjA5MzgxMzQzNn0.Vp4VqMKjCwE1PCu_ogUe537LrCepNzo8E-_GYr6LMNc";
+const SUPABASE_URL = "https://yxhqlnokkqhuqhvttgxw.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4aHFsbm9ra3FodXFodnR0Z3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjE0MTQsImV4cCI6MjA5MzU5NzQxNH0.i68qMyKyBEtVW8dGvacLuLLebWx8J_42SU5Wc2FgTR0";
+
 const headers = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
@@ -695,6 +696,43 @@ function TeacherView({ teacher, onLogout }) {
     return () => document.removeEventListener("click", handler);
   }, [showStudentList]);
 
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadAllScreenshots = async () => {
+    if (subs.length === 0) return;
+    setDownloading(true);
+
+    try {
+      // Laad JSZip dynamisch
+      const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+      const zip = new JSZip();
+      const folder = zip.folder(selected.name);
+
+      subs.forEach((sub, i) => {
+        if (!sub.image_base64) return;
+        // Bestandsnaam: achternaam_voornaam_nummer.jpg
+        const naamDelen = sub.student_name.trim().split(" ");
+        const achternaam = naamDelen.pop();
+        const voornaam = naamDelen.join("_") || "onbekend";
+        const bestandsnaam = `${achternaam}_${voornaam}_${i + 1}.jpg`;
+        folder.file(bestandsnaam, sub.image_base64, { base64: true });
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${selected.name}_screenshots.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download mislukt:", err);
+      alert("Download mislukt. Probeer opnieuw.");
+    }
+
+    setDownloading(false);
+  };
+
   const loadRooms = async () => {
     const data = await DB.getRoomsByTeacher(teacher.id);
     setRooms(Array.isArray(data) ? data : []);
@@ -851,7 +889,26 @@ function TeacherView({ teacher, onLogout }) {
         ) : (
           <>
             <div style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, color: C.text }}>{selected.name}</h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, color: C.text }}>{selected.name}</h2>
+                {subs.length > 0 && (
+                  <button
+                    onClick={downloadAllScreenshots}
+                    disabled={downloading}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      background: downloading ? C.border : C.surface,
+                      color: downloading ? C.sub : C.blue,
+                      border: `1.5px solid ${downloading ? C.border : C.blue}`,
+                      borderRadius: 10, padding: "8px 16px",
+                      fontSize: 13, fontWeight: 600, cursor: downloading ? "not-allowed" : "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {downloading ? "⏳ Downloaden…" : "⬇️ Download alle screenshots"}
+                  </button>
+                )}
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13, color: C.sub }}>Code voor leerlingen:</span>
                 <span style={{
