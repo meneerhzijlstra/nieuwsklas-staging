@@ -21,10 +21,14 @@ Vraag: "${vraag}"
 Antwoordopties: ${opties.join(", ")}
 
 Schrijf een neutrale contextzin van maximaal 2 zinnen die:
-- Alleen beschrijft waar het artikel over gaat (bijv. "Het artikel gaat over...")
+- Begint met "Deze vraag gaat over " gevolgd door een korte beschrijving van het onderwerp
 - GEEN antwoord geeft op de vraag, ook niet indirect
 - GEEN specifieke getallen, namen, of details noemt die het antwoord verraden
+- Grammaticaal correct en vloeiend is
 - Geschikt is als inleiding op de vraag in een toets
+- Geen journalistieke formuleringen gebruikt zoals "het artikel beschrijft", "het artikel meldt" of "het artikel bericht"
+
+Voorbeeldopening: "Deze vraag gaat over een incident waarbij de politie betrokken was."
 
 Geef ALLEEN de contextzin terug, geen uitleg.`;
 
