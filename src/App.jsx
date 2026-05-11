@@ -1038,8 +1038,8 @@ function TeacherView({ teacher, onLogout }) {
 
       const header = "NUMMER;TYPE;STAM;MAX_SCORE;ANTWOORDMODEL;OPTIE_1;OPTIE_2;OPTIE_3;OPTIE_4;CORRECT_1";
       const rows = vragenMetContext.map((v, i) => {
-        // STAM = context + vraag, gecombineerd op één regel
-        const stam = `${v.context} ${v.vraag}`;
+        // STAM = artikelvermelding + context + vraag
+        const stam = `Artikel: ${v.artikelTitel}\n${v.context} ${v.vraag}`;
         return [
           i + 1,
           "Meerkeuze",
