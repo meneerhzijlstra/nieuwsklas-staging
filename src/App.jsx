@@ -994,6 +994,11 @@ function TeacherView({ teacher, onLogout }) {
   };
 
   const [exportCsvLoading, setExportCsvLoading] = useState(false);
+  const mainRef = useRef(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  const handleScroll = () => setScrolled(mainRef.current?.scrollTop > 200);
+  const scrollToTop = () => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 
   const exportCSV = async () => {
     if (aantalGeselecteerd === 0) return;
@@ -1177,7 +1182,7 @@ function TeacherView({ teacher, onLogout }) {
       </aside>
 
       {/* Main */}
-      <main style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg }}>
+      <main ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg, position: "relative" }}>
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12 }}>
             <div style={{
@@ -1191,14 +1196,31 @@ function TeacherView({ teacher, onLogout }) {
           <>
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-                <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, color: C.text }}>
-                  {selected.name}
-                  {selected.paused && (
-                    <span style={{ marginLeft: 10, fontSize: 13, background: C.redLight, color: C.red, borderRadius: 99, padding: "3px 10px", fontWeight: 600, verticalAlign: "middle" }}>
-                      ⏸ Gepauzeerd
-                    </span>
-                  )}
-                </h2>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <h2 style={{ margin: "0", fontSize: 24, fontWeight: 700, color: C.text }}>
+                    {selected.name}
+                    {selected.paused && (
+                      <span style={{ marginLeft: 10, fontSize: 13, background: C.redLight, color: C.red, borderRadius: 99, padding: "3px 10px", fontWeight: 600, verticalAlign: "middle" }}>
+                        ⏸ Gepauzeerd
+                      </span>
+                    )}
+                  </h2>
+                  {/* Klas wijzigen knop */}
+                  <button
+                    onClick={() => { setSelected(null); setSelectedQuestions({}); setSubs([]); }}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      background: "transparent", color: C.sub,
+                      border: `1.5px solid ${C.border}`, borderRadius: 8,
+                      padding: "5px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; }}
+                  >
+                    ✏️ Klas wijzigen
+                  </button>
+                </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     onClick={() => togglePause(selected, { stopPropagation: () => {} })}
@@ -1382,6 +1404,25 @@ function TeacherView({ teacher, onLogout }) {
               ) : subs.map(s => <QuizCard key={s.id} sub={s} selectedQuestions={selectedQuestions} onToggleQuestion={toggleQuestion} />)
             }
           </>
+        )}
+
+        {/* Floating terug naar boven knop */}
+        {scrolled && (
+          <button
+            onClick={scrollToTop}
+            title="Terug naar boven"
+            style={{
+              position: "fixed", bottom: 28, right: 28, zIndex: 500,
+              width: 44, height: 44, borderRadius: 99,
+              background: C.ink, color: C.white,
+              border: "none", cursor: "pointer", fontSize: 18,
+              boxShadow: "0 4px 16px rgba(15,21,35,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s, transform 0.2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >↑</button>
         )}
       </main>
     </div>
