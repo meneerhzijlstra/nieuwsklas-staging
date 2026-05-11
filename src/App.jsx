@@ -993,6 +993,81 @@ function TeacherView({ teacher, onLogout }) {
     setExportLoading(false);
   };
 
+  const [exportCsvLoading, setExportCsvLoading] = useState(false);
+
+  const exportCSV = () => {
+    if (aantalGeselecteerd === 0) return;
+    setExportCsvLoading(true);
+
+    try {
+      // Bouw lijst van geselecteerde vragen
+      const vragen = [];
+      subs.forEach(sub => {
+        if (!sub.quiz?.questions) return;
+        sub.quiz.questions.forEach((q, qi) => {
+          const key = `${sub.id}-${qi}`;
+          if (selectedQuestions[key]) {
+            vragen.push({
+              vraag: q.question,
+              opties: q.options,
+              correct: q.correct,
+            });
+          }
+        });
+      });
+
+      // Escape een veld voor CSV (puntkomma en aanhalingstekens afhandelen)
+      const escape = (val) => {
+        if (val === null || val === undefined) return "";
+        const str = String(val);
+        // Als het veld een puntkomma, aanhalingsteken of newline bevat, wrap in quotes
+        if (str.includes(";") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Header — met BOM voor correcte Excel weergave
+      const header = "NUMMER;TYPE;STAM;MAX_SCORE;ANTWOORDMODEL;OPTIE_1;OPTIE_2;OPTIE_3;OPTIE_4;CORRECT_1";
+      const rows = vragen.map((v, i) => {
+        const optie1 = escape(v.opties[0] || "");
+        const optie2 = escape(v.opties[1] || "");
+        const optie3 = escape(v.opties[2] || "");
+        const optie4 = escape(v.opties[3] || "");
+        const correct = escape(v.opties[v.correct] || "");
+
+        return [
+          i + 1,                    // NUMMER
+          "Meerkeuze",              // TYPE
+          escape(v.vraag),          // STAM
+          1,                        // MAX_SCORE
+          "",                       // ANTWOORDMODEL (leeg)
+          optie1,                   // OPTIE_1
+          optie2,                   // OPTIE_2
+          optie3,                   // OPTIE_3
+          optie4,                   // OPTIE_4
+          correct,                  // CORRECT_1 (tekst van juiste antwoord)
+        ].join(";");
+      });
+
+      // BOM + header + rijen
+      const csvInhoud = "\uFEFF" + header + "\n" + rows.join("\n");
+
+      const blob = new Blob([csvInhoud], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Toetsvragen_${selected.name.replace(/\s+/g, "_")}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CSV export fout:", err);
+      alert("CSV export mislukt: " + err.message);
+    }
+
+    setExportCsvLoading(false);
+  };
+
   if (loading) return <Spinner label="Klassen laden…" />;
 
   return (
@@ -1253,22 +1328,40 @@ function TeacherView({ teacher, onLogout }) {
                     ? <span style={{ color: C.blue, fontWeight: 600 }}>{aantalGeselecteerd} vraag{aantalGeselecteerd !== 1 ? "en" : ""} geselecteerd</span>
                     : "Selecteer vragen via de checkboxes om te exporteren"}
                 </div>
-                <button
-                  onClick={exportWord}
-                  disabled={aantalGeselecteerd === 0 || exportLoading}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
-                    color: aantalGeselecteerd === 0 ? C.sub : C.white,
-                    border: "none", borderRadius: 10,
-                    padding: "9px 18px", fontSize: 13, fontWeight: 600,
-                    cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
-                    boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(59,111,240,0.25)",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
-                </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={exportWord}
+                    disabled={aantalGeselecteerd === 0 || exportLoading}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
+                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
+                      border: "none", borderRadius: 10,
+                      padding: "9px 18px", fontSize: 13, fontWeight: 600,
+                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
+                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(59,111,240,0.25)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
+                  </button>
+                  <button
+                    onClick={exportCSV}
+                    disabled={aantalGeselecteerd === 0 || exportCsvLoading}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #16a34a, #15803d)`,
+                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
+                      border: "none", borderRadius: 10,
+                      padding: "9px 18px", fontSize: 13, fontWeight: 600,
+                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
+                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(22,163,74,0.25)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {exportCsvLoading ? "⏳ Exporteren…" : "📊 Download als CSV / Excel"}
+                  </button>
+                </div>
               </div>
             )}
 
