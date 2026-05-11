@@ -827,6 +827,20 @@ function TeacherView({ teacher, onLogout }) {
 
   const aantalGeselecteerd = Object.values(selectedQuestions).filter(Boolean).length;
 
+  const herschrijfContext = async (samenvatting, vraag, opties) => {
+    try {
+      const res = await fetch("/api/rewrite-context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ samenvatting, vraag, opties }),
+      });
+      const data = await res.json();
+      return data.context || null;
+    } catch {
+      return null;
+    }
+  };
+
   const exportWord = async () => {
     if (aantalGeselecteerd === 0) return;
     setExportLoading(true);
@@ -867,6 +881,15 @@ function TeacherView({ teacher, onLogout }) {
         day: "numeric", month: "long", year: "numeric"
       });
 
+      // Herschrijf samenvattingen zodat ze geen antwoord weggeven
+      // Parallel voor alle vragen tegelijk voor snelheid
+      const vragenMetContext = await Promise.all(
+        vragen.map(async v => {
+          const nieuweContext = await herschrijfContext(v.samenvatting, v.vraag, v.opties);
+          return { ...v, context: nieuweContext || `Het artikel gaat over: ${v.artikelTitel}.` };
+        })
+      );
+
       const children = [];
 
       // Titel
@@ -896,7 +919,7 @@ function TeacherView({ teacher, onLogout }) {
       );
 
       // Vragen
-      vragen.forEach((v, index) => {
+      vragenMetContext.forEach((v, index) => {
         // Artikeltitel als context
         children.push(
           new Paragraph({
@@ -905,11 +928,11 @@ function TeacherView({ teacher, onLogout }) {
           })
         );
 
-        // Samenvatting als context boven de vraag
-        if (v.samenvatting) {
+        // Neutrale contextzin boven de vraag
+        if (v.context) {
           children.push(
             new Paragraph({
-              children: [new TextRun({ text: v.samenvatting, size: 22, color: "333333" })],
+              children: [new TextRun({ text: v.context, size: 22, color: "333333" })],
               spacing: { after: 100 },
             })
           );
