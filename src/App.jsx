@@ -995,7 +995,7 @@ function TeacherView({ teacher, onLogout }) {
 
   const [exportCsvLoading, setExportCsvLoading] = useState(false);
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     if (aantalGeselecteerd === 0) return;
     setExportCsvLoading(true);
 
@@ -1008,6 +1008,8 @@ function TeacherView({ teacher, onLogout }) {
           const key = `${sub.id}-${qi}`;
           if (selectedQuestions[key]) {
             vragen.push({
+              artikelTitel: sub.quiz.title || "Onbekend artikel",
+              samenvatting: sub.quiz.summary || "",
               vraag: q.question,
               opties: q.options,
               correct: q.correct,
@@ -1016,43 +1018,44 @@ function TeacherView({ teacher, onLogout }) {
         });
       });
 
-      // Escape een veld voor CSV (puntkomma en aanhalingstekens afhandelen)
+      // Herschrijf samenvattingen — zelfde logica als Word export
+      const vragenMetContext = await Promise.all(
+        vragen.map(async v => {
+          const nieuweContext = await herschrijfContext(v.samenvatting, v.vraag, v.opties);
+          return { ...v, context: nieuweContext || `Het artikel gaat over: ${v.artikelTitel}.` };
+        })
+      );
+
+      // Escape een veld voor CSV
       const escape = (val) => {
         if (val === null || val === undefined) return "";
         const str = String(val);
-        // Als het veld een puntkomma, aanhalingsteken of newline bevat, wrap in quotes
-        if (str.includes(";") || str.includes('"') || str.includes("\n")) {
+        if (str.includes(";") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
           return `"${str.replace(/"/g, '""')}"`;
         }
         return str;
       };
 
-      // Header — met BOM voor correcte Excel weergave
       const header = "NUMMER;TYPE;STAM;MAX_SCORE;ANTWOORDMODEL;OPTIE_1;OPTIE_2;OPTIE_3;OPTIE_4;CORRECT_1";
-      const rows = vragen.map((v, i) => {
-        const optie1 = escape(v.opties[0] || "");
-        const optie2 = escape(v.opties[1] || "");
-        const optie3 = escape(v.opties[2] || "");
-        const optie4 = escape(v.opties[3] || "");
-        const correct = escape(v.opties[v.correct] || "");
-
+      const rows = vragenMetContext.map((v, i) => {
+        // STAM = context + vraag, gecombineerd op één regel
+        const stam = `${v.context} ${v.vraag}`;
         return [
-          i + 1,                    // NUMMER
-          "Meerkeuze",              // TYPE
-          escape(v.vraag),          // STAM
-          1,                        // MAX_SCORE
-          "",                       // ANTWOORDMODEL (leeg)
-          optie1,                   // OPTIE_1
-          optie2,                   // OPTIE_2
-          optie3,                   // OPTIE_3
-          optie4,                   // OPTIE_4
-          correct,                  // CORRECT_1 (tekst van juiste antwoord)
+          i + 1,
+          "Meerkeuze",
+          escape(stam),
+          1,
+          "",
+          escape(v.opties[0] || ""),
+          escape(v.opties[1] || ""),
+          escape(v.opties[2] || ""),
+          escape(v.opties[3] || ""),
+          escape(v.opties[v.correct] || ""),
         ].join(";");
       });
 
       // BOM + header + rijen
       const csvInhoud = "\uFEFF" + header + "\n" + rows.join("\n");
-
       const blob = new Blob([csvInhoud], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
