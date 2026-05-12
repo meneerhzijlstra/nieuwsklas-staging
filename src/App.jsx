@@ -715,8 +715,9 @@ function TeacherView({ teacher, onLogout }) {
   const [loadingSubs,      setLoadingSubs]     = useState(false);
   const [roomError,        setRoomError]       = useState("");
   const [showStudentList,  setShowStudentList] = useState(false);
-  const [selectedQuestions,setSelectedQuestions] = useState({}); // { "subId-qi": true }
+  const [selectedQuestions,setSelectedQuestions] = useState({});
   const [exportLoading,    setExportLoading]   = useState(false);
+  const [showClassPicker,  setShowClassPicker] = useState(false);
 
   // Sluit de leerlingenlijst als je erbuiten klikt
   useEffect(() => {
@@ -997,7 +998,7 @@ function TeacherView({ teacher, onLogout }) {
   const mainRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
 
-  const handleScroll = () => setScrolled(mainRef.current?.scrollTop > 200);
+  const handleScroll = (e) => setScrolled(e.currentTarget.scrollTop > 300);
   const scrollToTop = () => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 
   const exportCSV = async () => {
@@ -1184,13 +1185,33 @@ function TeacherView({ teacher, onLogout }) {
       {/* Main */}
       <main ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg, position: "relative" }}>
         {!selected ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{
               width: 72, height: 72, borderRadius: 20, background: C.blueLight,
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32,
             }}>📚</div>
             <div style={{ fontWeight: 700, fontSize: 20, color: C.text }}>Selecteer een klas</div>
-            <div style={{ fontSize: 14, color: C.sub }}>of maak een nieuwe aan in de zijbalk</div>
+            {rooms.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 320 }}>
+                {rooms.map(room => (
+                  <button key={room.id} onClick={() => selectRoom(room)} style={{
+                    padding: "12px 16px", borderRadius: 10, border: `1.5px solid ${C.border}`,
+                    background: C.surface, color: C.text, fontSize: 14, fontWeight: 500,
+                    cursor: "pointer", textAlign: "left",
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.background = C.blueLight; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.surface; }}
+                  >
+                    <span>{room.name}</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: 2, color: C.sub }}>{room.code}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, color: C.sub }}>Maak een nieuwe klas aan in de zijbalk</div>
+            )}
           </div>
         ) : (
           <>
@@ -1207,7 +1228,7 @@ function TeacherView({ teacher, onLogout }) {
                   </h2>
                   {/* Klas wijzigen knop */}
                   <button
-                    onClick={() => { setSelected(null); setSelectedQuestions({}); setSubs([]); }}
+                    onClick={() => setShowClassPicker(true)}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 5,
                       background: "transparent", color: C.sub,
@@ -1220,6 +1241,60 @@ function TeacherView({ teacher, onLogout }) {
                   >
                     ✏️ Klas wijzigen
                   </button>
+
+                  {/* Klas wijzigen modal */}
+                  {showClassPicker && (
+                    <div
+                      onClick={() => setShowClassPicker(false)}
+                      style={{
+                        position: "fixed", inset: 0, zIndex: 1000,
+                        background: "rgba(15,21,35,0.45)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        padding: 20,
+                      }}
+                    >
+                      <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          background: C.surface, borderRadius: 16, padding: "24px 22px",
+                          width: "100%", maxWidth: 380,
+                          boxShadow: "0 8px 32px rgba(15,21,35,0.15)",
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: 17, color: C.text, marginBottom: 6 }}>
+                          Klas wijzigen
+                        </div>
+                        <div style={{ fontSize: 13, color: C.sub, marginBottom: 16 }}>
+                          Actief: <strong style={{ color: C.blue }}>{selected.name}</strong>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                          {rooms.map(room => (
+                            <button
+                              key={room.id}
+                              onClick={() => {
+                                selectRoom(room);
+                                setShowClassPicker(false);
+                              }}
+                              style={{
+                                padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${room.id === selected.id ? C.blue : C.border}`,
+                                background: room.id === selected.id ? C.blueLight : C.surfaceAlt,
+                                color: room.id === selected.id ? C.blue : C.text,
+                                fontWeight: room.id === selected.id ? 600 : 400,
+                                fontSize: 14, cursor: "pointer", textAlign: "left",
+                                display: "flex", justifyContent: "space-between", alignItems: "center",
+                              }}
+                            >
+                              <span>{room.name}</span>
+                              <span style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: 2, color: C.sub }}>{room.code}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <GhostBtn onClick={() => setShowClassPicker(false)} style={{ width: "100%", justifyContent: "center" }}>
+                          Annuleren
+                        </GhostBtn>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
