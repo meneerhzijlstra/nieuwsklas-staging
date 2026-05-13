@@ -1578,8 +1578,8 @@ function TeacherView({ teacher, onLogout }) {
         )}
       </main>
 
-      {/* Floating terug naar boven knop — buiten main zodat fixed positioning correct werkt */}
-      {scrolled && (
+      {/* Terug naar boven knop — altijd zichtbaar als er een klas geselecteerd is met inleveringen */}
+      {selected && subs.length > 0 && (
         <button
           onClick={scrollToTop}
           title="Terug naar boven"
