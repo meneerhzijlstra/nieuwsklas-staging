@@ -68,6 +68,14 @@ const DB = {
     });
   },
 
+  async updateRoomName(id, name) {
+    await fetch(`${SUPABASE_URL}/rest/v1/rooms?id=eq.${id}`, {
+      method: "PATCH",
+      headers: { ...headers, "Prefer": "return=minimal" },
+      body: JSON.stringify({ name }),
+    });
+  },
+
   async pauseRoom(id, paused) {
     await fetch(`${SUPABASE_URL}/rest/v1/rooms?id=eq.${id}`, {
       method: "PATCH",
@@ -718,6 +726,11 @@ function TeacherView({ teacher, onLogout }) {
   const [selectedQuestions,setSelectedQuestions] = useState({});
   const [exportLoading,    setExportLoading]   = useState(false);
   const [showClassPicker,  setShowClassPicker] = useState(false);
+  const [editingRoom,      setEditingRoom]     = useState(null); // { id, name }
+  const [editName,         setEditName]        = useState("");
+  const [editError,        setEditError]       = useState("");
+  const [editSaving,       setEditSaving]      = useState(false);
+  const [editSuccess,      setEditSuccess]     = useState(false);
 
   // Sluit de leerlingenlijst als je erbuiten klikt
   useEffect(() => {
@@ -816,7 +829,19 @@ function TeacherView({ teacher, onLogout }) {
     if (selected?.id === room.id) setSelected(s => ({ ...s, paused: newPaused }));
   };
 
-  // Reset geselecteerde vragen als je van klas wisselt
+  const saveRoomName = async () => {
+    setEditError("");
+    if (!editName.trim()) return setEditError("Klasnaam mag niet leeg zijn.");
+    setEditSaving(true);
+    await DB.updateRoomName(editingRoom.id, editName.trim());
+    // Update lokale state
+    setRooms(r => r.map(x => x.id === editingRoom.id ? { ...x, name: editName.trim() } : x));
+    if (selected?.id === editingRoom.id) setSelected(s => ({ ...s, name: editName.trim() }));
+    setEditSaving(false);
+    setEditSuccess(true);
+    setEditingRoom(null);
+    setTimeout(() => setEditSuccess(false), 3000);
+  };
   const selectRoom = (room) => {
     setSelected(room);
     setSelectedQuestions({});
@@ -1245,7 +1270,7 @@ function TeacherView({ teacher, onLogout }) {
                   {/* Klas wijzigen modal */}
                   {showClassPicker && (
                     <div
-                      onClick={() => setShowClassPicker(false)}
+                      onClick={() => { setShowClassPicker(false); setEditingRoom(null); setEditError(""); }}
                       style={{
                         position: "fixed", inset: 0, zIndex: 1000,
                         background: "rgba(15,21,35,0.45)",
@@ -1257,40 +1282,111 @@ function TeacherView({ teacher, onLogout }) {
                         onClick={e => e.stopPropagation()}
                         style={{
                           background: C.surface, borderRadius: 16, padding: "24px 22px",
-                          width: "100%", maxWidth: 380,
+                          width: "100%", maxWidth: 400,
                           boxShadow: "0 8px 32px rgba(15,21,35,0.15)",
                         }}
                       >
-                        <div style={{ fontWeight: 700, fontSize: 17, color: C.text, marginBottom: 6 }}>
+                        <div style={{ fontWeight: 700, fontSize: 17, color: C.text, marginBottom: 4 }}>
                           Klas wijzigen
                         </div>
                         <div style={{ fontSize: 13, color: C.sub, marginBottom: 16 }}>
                           Actief: <strong style={{ color: C.blue }}>{selected.name}</strong>
                         </div>
+
+                        {/* Succesmelding */}
+                        {editSuccess && (
+                          <div style={{ background: C.greenLight, color: C.green, border: `1.5px solid ${C.green}`, borderRadius: 8, padding: "8px 12px", fontSize: 13, marginBottom: 12 }}>
+                            ✓ Klasnaam succesvol aangepast
+                          </div>
+                        )}
+
                         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                           {rooms.map(room => (
-                            <button
-                              key={room.id}
-                              onClick={() => {
-                                selectRoom(room);
-                                setShowClassPicker(false);
-                              }}
-                              style={{
-                                padding: "10px 14px", borderRadius: 10, border: `1.5px solid ${room.id === selected.id ? C.blue : C.border}`,
-                                background: room.id === selected.id ? C.blueLight : C.surfaceAlt,
-                                color: room.id === selected.id ? C.blue : C.text,
-                                fontWeight: room.id === selected.id ? 600 : 400,
-                                fontSize: 14, cursor: "pointer", textAlign: "left",
-                                display: "flex", justifyContent: "space-between", alignItems: "center",
-                              }}
-                            >
-                              <span>{room.name}</span>
-                              <span style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: 2, color: C.sub }}>{room.code}</span>
-                            </button>
+                            <div key={room.id}>
+                              {editingRoom?.id === room.id ? (
+                                /* Bewerkingsmodus */
+                                <div style={{ border: `1.5px solid ${C.blue}`, borderRadius: 10, padding: "10px 12px", background: C.blueLight }}>
+                                  <input
+                                    autoFocus
+                                    value={editName}
+                                    onChange={e => { setEditName(e.target.value); setEditError(""); }}
+                                    onKeyDown={e => e.key === "Enter" && saveRoomName()}
+                                    style={{
+                                      width: "100%", border: `1.5px solid ${C.blue}`, borderRadius: 8,
+                                      padding: "8px 10px", fontSize: 14, outline: "none",
+                                      boxSizing: "border-box", fontFamily: "inherit", color: C.text,
+                                      marginBottom: 8, background: C.white,
+                                    }}
+                                  />
+                                  {editError && (
+                                    <div style={{ fontSize: 12, color: C.red, marginBottom: 8 }}>{editError}</div>
+                                  )}
+                                  <div style={{ display: "flex", gap: 6 }}>
+                                    <button
+                                      onClick={saveRoomName}
+                                      disabled={editSaving}
+                                      style={{
+                                        flex: 1, background: editSaving ? C.border : C.blue,
+                                        color: C.white, border: "none", borderRadius: 8,
+                                        padding: "8px", fontSize: 12, fontWeight: 600,
+                                        cursor: editSaving ? "not-allowed" : "pointer",
+                                      }}
+                                    >{editSaving ? "Opslaan…" : "✓ Opslaan"}</button>
+                                    <button
+                                      onClick={() => { setEditingRoom(null); setEditError(""); }}
+                                      style={{
+                                        flex: 1, background: "transparent", border: `1.5px solid ${C.border}`,
+                                        borderRadius: 8, padding: "8px", fontSize: 12,
+                                        cursor: "pointer", color: C.sub,
+                                      }}
+                                    >Annuleren</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Normale weergave */
+                                <div style={{
+                                  display: "flex", alignItems: "center", gap: 8,
+                                  padding: "10px 14px", borderRadius: 10,
+                                  border: `1.5px solid ${room.id === selected.id ? C.blue : C.border}`,
+                                  background: room.id === selected.id ? C.blueLight : C.surfaceAlt,
+                                }}>
+                                  <button
+                                    onClick={() => { selectRoom(room); setShowClassPicker(false); }}
+                                    style={{
+                                      flex: 1, background: "transparent", border: "none",
+                                      color: room.id === selected.id ? C.blue : C.text,
+                                      fontWeight: room.id === selected.id ? 600 : 400,
+                                      fontSize: 14, cursor: "pointer", textAlign: "left",
+                                      padding: 0, display: "flex", justifyContent: "space-between",
+                                    }}
+                                  >
+                                    <span>{room.name}</span>
+                                    <span style={{ fontFamily: "monospace", fontSize: 11, letterSpacing: 2, color: C.sub }}>{room.code}</span>
+                                  </button>
+                                  {/* Bewerk-knop */}
+                                  <button
+                                    onClick={() => { setEditingRoom(room); setEditName(room.name); setEditError(""); }}
+                                    title="Klasnaam bewerken"
+                                    style={{
+                                      background: "transparent", border: "none",
+                                      cursor: "pointer", fontSize: 14, color: C.sub,
+                                      padding: "2px 6px", borderRadius: 6,
+                                      flexShrink: 0,
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.color = C.blue}
+                                    onMouseLeave={e => e.currentTarget.style.color = C.sub}
+                                  >✏️</button>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
-                        <GhostBtn onClick={() => setShowClassPicker(false)} style={{ width: "100%", justifyContent: "center" }}>
-                          Annuleren
+
+                        <GhostBtn
+                          onClick={() => { setShowClassPicker(false); setEditingRoom(null); setEditError(""); }}
+                          style={{ width: "100%", justifyContent: "center" }}
+                        >
+                          Sluiten
                         </GhostBtn>
                       </div>
                     </div>
