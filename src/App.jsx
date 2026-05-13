@@ -1577,25 +1577,26 @@ function TeacherView({ teacher, onLogout }) {
           </>
         )}
 
-        {/* Floating terug naar boven knop */}
-        {scrolled && (
-          <button
-            onClick={scrollToTop}
-            title="Terug naar boven"
-            style={{
-              position: "fixed", bottom: 28, right: 28, zIndex: 500,
-              width: 44, height: 44, borderRadius: 99,
-              background: C.ink, color: C.white,
-              border: "none", cursor: "pointer", fontSize: 18,
-              boxShadow: "0 4px 16px rgba(15,21,35,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "opacity 0.2s, transform 0.2s",
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-          >↑</button>
         )}
       </main>
+
+      {/* Floating terug naar boven knop — buiten main zodat fixed positioning correct werkt */}
+      {scrolled && (
+        <button
+          onClick={scrollToTop}
+          title="Terug naar boven"
+          style={{
+            position: "fixed", bottom: 28, right: 28, zIndex: 500,
+            width: 44, height: 44, borderRadius: 99,
+            background: C.ink, color: C.white,
+            border: "none", cursor: "pointer", fontSize: 20,
+            boxShadow: "0 4px 16px rgba(15,21,35,0.25)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        >↑</button>
+      )}
     </div>
   );
 }
