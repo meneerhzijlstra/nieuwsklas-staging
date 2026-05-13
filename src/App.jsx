@@ -1025,8 +1025,13 @@ function TeacherView({ teacher, onLogout }) {
 
   const handleScroll = (e) => setScrolled(e.currentTarget.scrollTop > 300);
   const scrollToTop = () => {
-    const el = document.getElementById("teacher-main");
-    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
+    // Scroll het main element
+    const main = document.getElementById("teacher-main");
+    if (main) main.scrollTop = 0;
+    // Scroll ook window en document voor zekerheid
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   };
 
   const exportCSV = async () => {
