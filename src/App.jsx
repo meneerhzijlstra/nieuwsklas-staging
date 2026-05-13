@@ -1576,8 +1576,6 @@ function TeacherView({ teacher, onLogout }) {
             }
           </>
         )}
-
-        )}
       </main>
 
       {/* Floating terug naar boven knop — buiten main zodat fixed positioning correct werkt */}
