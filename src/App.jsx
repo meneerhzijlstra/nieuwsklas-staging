@@ -1024,7 +1024,10 @@ function TeacherView({ teacher, onLogout }) {
   const [scrolled, setScrolled] = useState(false);
 
   const handleScroll = (e) => setScrolled(e.currentTarget.scrollTop > 300);
-  const scrollToTop = () => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  const scrollToTop = () => {
+    const el = document.getElementById("teacher-main");
+    if (el) el.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const exportCSV = async () => {
     if (aantalGeselecteerd === 0) return;
@@ -1208,7 +1211,7 @@ function TeacherView({ teacher, onLogout }) {
       </aside>
 
       {/* Main */}
-      <main ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg, position: "relative" }}>
+      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg, position: "relative" }}>
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{
