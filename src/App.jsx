@@ -1085,6 +1085,8 @@ function TeacherView({ teacher, onLogout }) {
 
     setExportZipLoading(false);
   };
+
+  const exportCSV = async () => {
     if (aantalGeselecteerd === 0) return;
     setExportCsvLoading(true);
 
