@@ -1646,6 +1646,9 @@ function TeacherView({ teacher, onLogout }) {
                   >
                     {exportZipLoading ? "⏳ Downloaden…" : "🖼️ Download artikelen (ZIP)"}
                   </button>
+                  <button
+                    onClick={exportCSV}
+                    disabled={aantalGeselecteerd === 0 || exportCsvLoading}
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
                       background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #16a34a, #15803d)`,
