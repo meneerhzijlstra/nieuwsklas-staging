@@ -1034,7 +1034,57 @@ function TeacherView({ teacher, onLogout }) {
     document.body.scrollTop = 0;
   };
 
-  const exportCSV = async () => {
+  const [exportZipLoading, setExportZipLoading] = useState(false);
+
+  const exportArticlesZip = async () => {
+    if (aantalGeselecteerd === 0) return;
+    setExportZipLoading(true);
+
+    try {
+      if (!window.JSZip) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const zip = new window.JSZip();
+      const folder = zip.folder(`Artikelen_${selected.name}`);
+
+      // Verzamel unieke inleveringen waarvan minstens één vraag geselecteerd is
+      const geselecteerdeSubs = subs.filter(sub =>
+        sub.quiz?.questions?.some((_, qi) => selectedQuestions[`${sub.id}-${qi}`])
+      );
+
+      geselecteerdeSubs.forEach((sub, i) => {
+        if (!sub.image_base64) return;
+        const naamDelen = sub.student_name.trim().split(" ");
+        const achternaam = naamDelen.pop();
+        const voornaam = naamDelen.join("_") || "onbekend";
+        const titel = sub.quiz?.title
+          ? sub.quiz.title.replace(/[^a-zA-Z0-9 _-]/g, "").trim().slice(0, 40)
+          : "artikel";
+        const bestandsnaam = `${String(i + 1).padStart(2, "0")}_${achternaam}_${voornaam}_${titel}.jpg`;
+        folder.file(bestandsnaam, sub.image_base64, { base64: true });
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Artikelen_${selected.name.replace(/\s+/g, "_")}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("ZIP export fout:", err);
+      alert("Download mislukt: " + err.message);
+    }
+
+    setExportZipLoading(false);
+  };
     if (aantalGeselecteerd === 0) return;
     setExportCsvLoading(true);
 
@@ -1580,8 +1630,22 @@ function TeacherView({ teacher, onLogout }) {
                     {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
                   </button>
                   <button
-                    onClick={exportCSV}
-                    disabled={aantalGeselecteerd === 0 || exportCsvLoading}
+                    onClick={exportArticlesZip}
+                    disabled={aantalGeselecteerd === 0 || exportZipLoading}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
+                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #b45309, #92400e)`,
+                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
+                      border: "none", borderRadius: 10,
+                      padding: "9px 18px", fontSize: 13, fontWeight: 600,
+                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
+                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(180,83,9,0.25)",
+                      transition: "all 0.15s",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {exportZipLoading ? "⏳ Downloaden…" : "🖼️ Download artikelen (ZIP)"}
+                  </button>
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
                       background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #16a34a, #15803d)`,
