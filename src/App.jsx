@@ -553,7 +553,7 @@ function QuizCard({ sub, selectedQuestions, onToggleQuestion }) {
                   {qi + 1}. {q.question}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginLeft: 26 }}>
+              <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 640 ? "1fr" : "1fr 1fr", gap: 6, marginLeft: 26 }}>
                 {q.options.map((opt, oi) => {
                   let bg = C.surfaceAlt, border = C.border, col = C.text, fw = 400;
                   if (ans[qi] === oi)                            { bg = C.blueLight;  border = C.blue;  col = C.blue;  fw = 600; }
@@ -1112,12 +1112,20 @@ function TeacherView({ teacher, onLogout }) {
 
   if (loading) return <Spinner label="Klassen laden…" />;
 
+  const isMobile = window.innerWidth < 640;
+
   return (
-    <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-      {/* Sidebar */}
+    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", flex: 1, overflow: "hidden" }}>
+      {/* Sidebar — horizontaal op mobiel, verticaal op desktop */}
       <aside style={{
-        width: 256, background: C.surface, borderRight: `1px solid ${C.border}`,
-        display: "flex", flexDirection: "column", flexShrink: 0,
+        width: isMobile ? "100%" : 256,
+        background: C.surface,
+        borderRight: isMobile ? "none" : `1px solid ${C.border}`,
+        borderBottom: isMobile ? `1px solid ${C.border}` : "none",
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        maxHeight: isMobile ? "none" : "100%",
       }}>
         {/* Teacher identity */}
         <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${C.border}` }}>
@@ -1144,7 +1152,16 @@ function TeacherView({ teacher, onLogout }) {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px 0" }}>
+        <div style={{
+          flex: isMobile ? "none" : 1,
+          overflowY: isMobile ? "hidden" : "auto",
+          overflowX: isMobile ? "auto" : "hidden",
+          padding: isMobile ? "8px 8px" : "8px 8px 0",
+          display: isMobile ? "flex" : "block",
+          flexDirection: isMobile ? "row" : undefined,
+          gap: isMobile ? 6 : undefined,
+          WebkitOverflowScrolling: "touch",
+        }}>
           {rooms.length === 0 && !creating && (
             <div style={{ textAlign: "center", padding: "32px 12px", color: C.sub, fontSize: 13 }}>
               Nog geen klassen.<br />Maak er een aan ↓
@@ -1152,11 +1169,16 @@ function TeacherView({ teacher, onLogout }) {
           )}
           {rooms.map(room => (
             <div key={room.id} onClick={() => selectRoom(room)} style={{
-              padding: "10px 12px", borderRadius: 10, marginBottom: 4, cursor: "pointer",
-              background: selected?.id === room.id ? C.blueLight : "transparent",
-              border: `1.5px solid ${selected?.id === room.id ? C.blue : "transparent"}`,
+              padding: isMobile ? "8px 12px" : "10px 12px",
+              borderRadius: 10,
+              marginBottom: isMobile ? 0 : 4,
+              flexShrink: isMobile ? 0 : undefined,
+              cursor: "pointer",
+              background: selected?.id === room.id ? C.blueLight : isMobile ? C.surfaceAlt : "transparent",
+              border: `1.5px solid ${selected?.id === room.id ? C.blue : isMobile ? C.border : "transparent"}`,
               transition: "all 0.15s",
               opacity: room.paused ? 0.7 : 1,
+              minWidth: isMobile ? 140 : undefined,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontWeight: 600, fontSize: 14, color: selected?.id === room.id ? C.blue : C.text, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1203,10 +1225,13 @@ function TeacherView({ teacher, onLogout }) {
             </div>
           ) : (
             <button onClick={() => setCreating(true)} style={{
-              width: "100%", background: "transparent",
+              width: isMobile ? "auto" : "100%",
+              flexShrink: 0,
+              background: "transparent",
               border: `1.5px dashed ${C.border}`, borderRadius: 10,
-              padding: "10px", color: C.sub, fontSize: 13,
-              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+              padding: isMobile ? "8px 12px" : "10px", color: C.sub,
+              fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+              whiteSpace: "nowrap",
             }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; e.currentTarget.style.background = C.blueLight; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; e.currentTarget.style.background = "transparent"; }}
@@ -1216,7 +1241,11 @@ function TeacherView({ teacher, onLogout }) {
       </aside>
 
       {/* Main */}
-      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 28, background: C.bg, position: "relative" }}>
+      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{
+        flex: 1, overflowY: "auto",
+        padding: isMobile ? 16 : 28,
+        background: C.bg, position: "relative",
+      }}>
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{
@@ -1400,7 +1429,7 @@ function TeacherView({ teacher, onLogout }) {
                     </div>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
                     onClick={() => togglePause(selected, { stopPropagation: () => {} })}
                     style={{
@@ -1524,20 +1553,20 @@ function TeacherView({ teacher, onLogout }) {
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
 
-            {/* Export Word knop */}
+            {/* Export Word + CSV knoppen */}
             {subs.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8, flexDirection: isMobile ? "column" : "row" }}>
                 <div style={{ fontSize: 13, color: C.sub }}>
                   {aantalGeselecteerd > 0
                     ? <span style={{ color: C.blue, fontWeight: 600 }}>{aantalGeselecteerd} vraag{aantalGeselecteerd !== 1 ? "en" : ""} geselecteerd</span>
                     : "Selecteer vragen via de checkboxes om te exporteren"}
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
                   <button
                     onClick={exportWord}
                     disabled={aantalGeselecteerd === 0 || exportLoading}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 8,
+                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
                       background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
                       color: aantalGeselecteerd === 0 ? C.sub : C.white,
                       border: "none", borderRadius: 10,
@@ -1545,6 +1574,7 @@ function TeacherView({ teacher, onLogout }) {
                       cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
                       boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(59,111,240,0.25)",
                       transition: "all 0.15s",
+                      justifyContent: "center",
                     }}
                   >
                     {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
@@ -1553,7 +1583,7 @@ function TeacherView({ teacher, onLogout }) {
                     onClick={exportCSV}
                     disabled={aantalGeselecteerd === 0 || exportCsvLoading}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 8,
+                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
                       background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #16a34a, #15803d)`,
                       color: aantalGeselecteerd === 0 ? C.sub : C.white,
                       border: "none", borderRadius: 10,
@@ -1561,6 +1591,7 @@ function TeacherView({ teacher, onLogout }) {
                       cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
                       boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(22,163,74,0.25)",
                       transition: "all 0.15s",
+                      justifyContent: "center",
                     }}
                   >
                     {exportCsvLoading ? "⏳ Exporteren…" : "📊 Download als CSV / Excel"}
