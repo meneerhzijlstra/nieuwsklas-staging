@@ -1127,9 +1127,10 @@ function TeacherView({ teacher, onLogout }) {
         return str;
       };
 
+      const stripPrefix = (opt) => (opt || "").replace(/^[A-D]\)\s*/i, "").trim();
+
       const header = "NUMMER;TYPE;STAM;MAX_SCORE;ANTWOORDMODEL;OPTIE_1;OPTIE_2;OPTIE_3;OPTIE_4;CORRECT_1";
       const rows = vragenMetContext.map((v, i) => {
-        // STAM = artikelvermelding + context + vraag
         const stam = `Artikel: ${v.artikelTitel}\n${v.context} ${v.vraag}`;
         return [
           i + 1,
@@ -1137,11 +1138,11 @@ function TeacherView({ teacher, onLogout }) {
           escape(stam),
           1,
           "",
-          escape(v.opties[0] || ""),
-          escape(v.opties[1] || ""),
-          escape(v.opties[2] || ""),
-          escape(v.opties[3] || ""),
-          escape(v.opties[v.correct] || ""),
+          escape(stripPrefix(v.opties[0])),
+          escape(stripPrefix(v.opties[1])),
+          escape(stripPrefix(v.opties[2])),
+          escape(stripPrefix(v.opties[3])),
+          escape(stripPrefix(v.opties[v.correct])),
         ].join(";");
       });
 
@@ -1510,7 +1511,7 @@ function TeacherView({ teacher, onLogout }) {
                         transition: "all 0.15s",
                       }}
                     >
-                      {downloading ? "⏳ Downloaden…" : "⬇️ Download alle screenshots"}
+                      {downloading ? "⏳ Downloaden…" : "⬇️ Download alle artikelen"}
                     </button>
                   )}
                 </div>
@@ -1708,7 +1709,7 @@ function TeacherView({ teacher, onLogout }) {
 }
 
 // ─── STUDENT VIEW ─────────────────────────────────────────────────────────────
-function StudentView() {
+function StudentView({ onBack }) {
   const [step,    setStep]    = useState("form");
   const [code,    setCode]    = useState("");
   const [name,    setName]    = useState("");
@@ -1776,6 +1777,11 @@ function StudentView() {
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: C.text }}>Nieuws inleveren</h2>
           <div style={{ fontSize: 13, color: C.sub }}>Upload een screenshot van een nieuwsartikel</div>
+        </div>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: C.sub, cursor: "pointer", fontSize: 13 }}>
+            ← Terug naar startpagina
+          </button>
         </div>
 
         <Card style={{ padding: "22px 20px" }}>
@@ -2193,7 +2199,7 @@ export default function App() {
 
   if (page === "student") return shell(
     <Logo />,
-    <StudentView />
+    <StudentView onBack={() => navigate("landing")} />
   );
 
   return shell(<Logo />, <Landing onGo={navigate} />);
