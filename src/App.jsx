@@ -983,6 +983,54 @@ function TeacherView({ teacher, onLogout }) {
         });
       });
 
+      // ── Antwoordmodel (nieuwe pagina) ──
+      const antwoordModel = [];
+
+      // Titel antwoordmodel
+      antwoordModel.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: `Antwoordmodel — ${selected.name}`, bold: true, size: 36 })],
+          spacing: { after: 120 },
+        })
+      );
+      antwoordModel.push(
+        new Paragraph({
+          children: [new TextRun({ text: `Datum: ${vandaag}`, color: "666666", size: 22 })],
+          spacing: { after: 400 },
+        })
+      );
+      antwoordModel.push(
+        new Paragraph({
+          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "3B6FF0", space: 1 } },
+          spacing: { after: 400 },
+          children: [],
+        })
+      );
+
+      // Antwoorden per vraag
+      vragenMetContext.forEach((v, index) => {
+        const juistAntwoord = v.opties[v.correct] || "";
+        antwoordModel.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${index + 1}.  `, bold: true, size: 22 }),
+              new TextRun({ text: v.vraag, size: 22, color: "444444" }),
+            ],
+            spacing: { after: 60 },
+          })
+        );
+        antwoordModel.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `       Antwoord: `, size: 22, bold: true, color: "16a34a" }),
+              new TextRun({ text: juistAntwoord, size: 22, color: "16a34a" }),
+            ],
+            spacing: { after: 160 },
+          })
+        );
+      });
+
       const doc = new Document({
         styles: {
           default: { document: { run: { font: "Arial", size: 24 } } },
@@ -992,15 +1040,28 @@ function TeacherView({ teacher, onLogout }) {
             paragraph: { spacing: { before: 240, after: 240 }, outlineLevel: 0 },
           }],
         },
-        sections: [{
-          properties: {
-            page: {
-              size: { width: 11906, height: 16838 },
-              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+        sections: [
+          {
+            // Pagina 1: vragen
+            properties: {
+              page: {
+                size: { width: 11906, height: 16838 },
+                margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+              },
             },
+            children,
           },
-          children,
-        }],
+          {
+            // Pagina 2: antwoordmodel
+            properties: {
+              page: {
+                size: { width: 11906, height: 16838 },
+                margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
+              },
+            },
+            children: antwoordModel,
+          },
+        ],
       });
 
       const blob = await Packer.toBlob(doc);
