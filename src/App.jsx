@@ -102,15 +102,46 @@ const DB = {
     });
   },
 
+  async uploadImage(base64, fileName) {
+    // Zet base64 om naar binary
+    const byteChars = atob(base64);
+    const byteArr = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([byteArr], { type: "image/jpeg" });
+
+    const res = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/artikelen/${fileName}`,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "image/jpeg",
+          "Cache-Control": "3600",
+        },
+        body: blob,
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Upload mislukt");
+    }
+    // Geef de publieke URL terug
+    return `${SUPABASE_URL}/storage/v1/object/public/artikelen/${fileName}`;
+  },
+
   async addSubmission(roomCode, studentName, imageBase64, quiz) {
+    // Upload afbeelding naar Storage
+    const fileName = `${roomCode}/${Date.now()}_${studentName.replace(/\s+/g, "_")}.jpg`;
+    const imageUrl = await DB.uploadImage(imageBase64, fileName);
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
       method: "POST",
       headers: { ...headers, "Prefer": "return=representation" },
       body: JSON.stringify({
         room_code: roomCode,
         student_name: studentName,
-        image_base64: imageBase64,
-        // Sla quiz op als JSON string zodat het altijd correct wordt opgeslagen
+        image_url: imageUrl,
         quiz: typeof quiz === "string" ? quiz : JSON.stringify(quiz),
       }),
     });
@@ -388,7 +419,7 @@ function ArticleModal({ sub, onClose }) {
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <img
-              src={`data:image/jpeg;base64,${sub.image_base64}`}
+              src={sub.image_url || `data:image/jpeg;base64,${sub.image_base64}`}
               alt="Nieuwsartikel"
               style={{ width: "100%", display: "block", objectFit: "contain", maxHeight: "60vh" }}
             />
@@ -500,7 +531,7 @@ function QuizCard({ sub, selectedQuestions, onToggleQuestion }) {
             style={{ position: "relative", cursor: "pointer", marginBottom: 20, borderRadius: 10, overflow: "hidden" }}
           >
             <img
-              src={`data:image/jpeg;base64,${sub.image_base64}`}
+              src={sub.image_url || `data:image/jpeg;base64,${sub.image_base64}`}
               alt="Screenshot"
               style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block", border: `1px solid ${C.border}` }}
             />
@@ -751,20 +782,28 @@ function TeacherView({ teacher, onLogout }) {
       const zip = new JSZip();
       const folder = zip.folder(selected.name);
 
-      subs.forEach((sub, i) => {
-        if (!sub.image_base64) return;
+      await Promise.all(subs.map(async (sub, i) => {
         const naamDelen = sub.student_name.trim().split(" ");
         const achternaam = naamDelen.pop();
         const voornaam = naamDelen.join("_") || "onbekend";
         const bestandsnaam = `${achternaam}_${voornaam}_${i + 1}.jpg`;
-        folder.file(bestandsnaam, sub.image_base64, { base64: true });
-      });
+
+        if (sub.image_url) {
+          // Nieuwe aanpak: haal afbeelding op via URL
+          const response = await fetch(sub.image_url);
+          const blob = await response.blob();
+          folder.file(bestandsnaam, blob);
+        } else if (sub.image_base64) {
+          // Fallback voor oude inleveringen met base64
+          folder.file(bestandsnaam, sub.image_base64, { base64: true });
+        }
+      }));
 
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${selected.name}_screenshots.zip`;
+      a.download = `${selected.name}_artikelen.zip`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
@@ -1115,13 +1154,11 @@ function TeacherView({ teacher, onLogout }) {
       const zip = new window.JSZip();
       const folder = zip.folder(`Artikelen_${selected.name}`);
 
-      // Verzamel unieke inleveringen waarvan minstens één vraag geselecteerd is
       const geselecteerdeSubs = subs.filter(sub =>
         sub.quiz?.questions?.some((_, qi) => selectedQuestions[`${sub.id}-${qi}`])
       );
 
-      geselecteerdeSubs.forEach((sub, i) => {
-        if (!sub.image_base64) return;
+      await Promise.all(geselecteerdeSubs.map(async (sub, i) => {
         const naamDelen = sub.student_name.trim().split(" ");
         const achternaam = naamDelen.pop();
         const voornaam = naamDelen.join("_") || "onbekend";
@@ -1129,8 +1166,15 @@ function TeacherView({ teacher, onLogout }) {
           ? sub.quiz.title.replace(/[^a-zA-Z0-9 _-]/g, "").trim().slice(0, 40)
           : "artikel";
         const bestandsnaam = `${String(i + 1).padStart(2, "0")}_${achternaam}_${voornaam}_${titel}.jpg`;
-        folder.file(bestandsnaam, sub.image_base64, { base64: true });
-      });
+
+        if (sub.image_url) {
+          const response = await fetch(sub.image_url);
+          const blob = await response.blob();
+          folder.file(bestandsnaam, blob);
+        } else if (sub.image_base64) {
+          folder.file(bestandsnaam, sub.image_base64, { base64: true });
+        }
+      }));
 
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
