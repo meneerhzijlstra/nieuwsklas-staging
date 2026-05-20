@@ -1611,23 +1611,6 @@ function TeacherView({ teacher, onLogout }) {
                   >
                     {selected.paused ? "▶️ Deblokkeren" : "⏸️ Pauzeren"}
                   </button>
-                  {subs.length > 0 && (
-                    <button
-                      onClick={downloadAllScreenshots}
-                      disabled={downloading}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 8,
-                        background: downloading ? C.border : C.surface,
-                        color: downloading ? C.sub : C.blue,
-                        border: `1.5px solid ${downloading ? C.border : C.blue}`,
-                        borderRadius: 10, padding: "8px 16px",
-                        fontSize: 13, fontWeight: 600, cursor: downloading ? "not-allowed" : "pointer",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {downloading ? "⏳ Downloaden…" : "⬇️ Download alle artikelen"}
-                    </button>
-                  )}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
