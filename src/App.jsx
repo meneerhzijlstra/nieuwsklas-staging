@@ -762,6 +762,7 @@ function TeacherView({ teacher, onLogout }) {
   const [editError,        setEditError]       = useState("");
   const [editSaving,       setEditSaving]      = useState(false);
   const [editSuccess,      setEditSuccess]     = useState(false);
+  const [showExportMenu,   setShowExportMenu]  = useState(false);
 
   // Sluit de leerlingenlijst als je erbuiten klikt
   useEffect(() => {
@@ -770,6 +771,14 @@ function TeacherView({ teacher, onLogout }) {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, [showStudentList]);
+
+  // Sluit export menu als je erbuiten klikt
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handler = () => setShowExportMenu(false);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showExportMenu]);
 
   const [downloading, setDownloading] = useState(false);
 
@@ -1711,7 +1720,7 @@ function TeacherView({ teacher, onLogout }) {
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
 
-            {/* Export Word + CSV knoppen */}
+            {/* Export dropdown */}
             {subs.length > 0 && (
               <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8, flexDirection: isMobile ? "column" : "row" }}>
                 <div style={{ fontSize: 13, color: C.sub }}>
@@ -1719,58 +1728,80 @@ function TeacherView({ teacher, onLogout }) {
                     ? <span style={{ color: C.blue, fontWeight: 600 }}>{aantalGeselecteerd} vraag{aantalGeselecteerd !== 1 ? "en" : ""} geselecteerd</span>
                     : "Selecteer vragen via de checkboxes om te exporteren"}
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
+                <div style={{ position: "relative" }}>
                   <button
-                    onClick={exportWord}
-                    disabled={aantalGeselecteerd === 0 || exportLoading}
+                    onClick={e => { e.stopPropagation(); setShowExportMenu(o => !o); }}
+                    disabled={exportLoading || exportCsvLoading || exportZipLoading || downloading}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
-                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
-                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
-                      border: "none", borderRadius: 10,
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`,
+                      color: C.white, border: "none", borderRadius: 10,
                       padding: "9px 18px", fontSize: 13, fontWeight: 600,
-                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
-                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(59,111,240,0.25)",
-                      transition: "all 0.15s",
+                      cursor: "pointer", width: isMobile ? "100%" : "auto",
+                      boxShadow: "0 2px 8px rgba(59,111,240,0.25)",
                       justifyContent: "center",
                     }}
                   >
-                    {exportLoading ? "⏳ Exporteren…" : "📄 Download als Word"}
+                    {exportLoading || exportCsvLoading || exportZipLoading || downloading
+                      ? "⏳ Bezig…"
+                      : <>⬇️ Downloaden {showExportMenu ? "▲" : "▼"}</>
+                    }
                   </button>
-                  <button
-                    onClick={exportArticlesZip}
-                    disabled={aantalGeselecteerd === 0 || exportZipLoading}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
-                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #b45309, #92400e)`,
-                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
-                      border: "none", borderRadius: 10,
-                      padding: "9px 18px", fontSize: 13, fontWeight: 600,
-                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
-                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(180,83,9,0.25)",
-                      transition: "all 0.15s",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {exportZipLoading ? "⏳ Downloaden…" : "🖼️ Download artikelen (ZIP)"}
-                  </button>
-                  <button
-                    onClick={exportCSV}
-                    disabled={aantalGeselecteerd === 0 || exportCsvLoading}
-                    style={{
-                      display: "inline-flex", alignItems: "center", gap: 8, flex: isMobile ? 1 : "none",
-                      background: aantalGeselecteerd === 0 ? C.border : `linear-gradient(135deg, #16a34a, #15803d)`,
-                      color: aantalGeselecteerd === 0 ? C.sub : C.white,
-                      border: "none", borderRadius: 10,
-                      padding: "9px 18px", fontSize: 13, fontWeight: 600,
-                      cursor: aantalGeselecteerd === 0 ? "not-allowed" : "pointer",
-                      boxShadow: aantalGeselecteerd === 0 ? "none" : "0 2px 8px rgba(22,163,74,0.25)",
-                      transition: "all 0.15s",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {exportCsvLoading ? "⏳ Exporteren…" : "📊 Download als CSV / Excel"}
-                  </button>
+
+                  {showExportMenu && (
+                    <div onClick={e => e.stopPropagation()} style={{
+                      position: "absolute", top: "calc(100% + 6px)", right: 0,
+                      background: C.surface, border: `1.5px solid ${C.border}`,
+                      borderRadius: 12, boxShadow: "0 4px 20px rgba(15,21,35,0.12)",
+                      zIndex: 200, minWidth: 240, overflow: "hidden",
+                    }}>
+                      {/* Geselecteerde vragen exporteren */}
+                      <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                        Geselecteerde vragen
+                      </div>
+                      {[
+                        { label: "📄 Word (met antwoordmodel)", action: () => { exportWord(); setShowExportMenu(false); }, disabled: aantalGeselecteerd === 0, loading: exportLoading },
+                        { label: "📊 CSV / Excel", action: () => { exportCSV(); setShowExportMenu(false); }, disabled: aantalGeselecteerd === 0, loading: exportCsvLoading },
+                        { label: "🖼️ Artikelen (ZIP)", action: () => { exportArticlesZip(); setShowExportMenu(false); }, disabled: aantalGeselecteerd === 0, loading: exportZipLoading },
+                      ].map((item, i) => (
+                        <button key={i} onClick={item.action} disabled={item.disabled}
+                          style={{
+                            display: "block", width: "100%", textAlign: "left",
+                            padding: "10px 16px", border: "none", borderTop: `1px solid ${C.border}`,
+                            background: item.disabled ? C.surfaceAlt : C.surface,
+                            color: item.disabled ? C.sub : C.text,
+                            fontSize: 13, fontWeight: 500, cursor: item.disabled ? "not-allowed" : "pointer",
+                            transition: "background 0.1s",
+                          }}
+                          onMouseEnter={e => !item.disabled && (e.currentTarget.style.background = C.blueLight)}
+                          onMouseLeave={e => (e.currentTarget.style.background = item.disabled ? C.surfaceAlt : C.surface)}
+                        >
+                          {item.loading ? "⏳ Bezig…" : item.label}
+                          {item.disabled && <span style={{ fontSize: 11, color: C.sub, marginLeft: 8 }}>(geen selectie)</span>}
+                        </button>
+                      ))}
+
+                      {/* Alle artikelen downloaden */}
+                      <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8, borderTop: `2px solid ${C.border}`, marginTop: 4 }}>
+                        Alle artikelen
+                      </div>
+                      <button
+                        onClick={() => { downloadAllScreenshots(); setShowExportMenu(false); }}
+                        disabled={subs.length === 0}
+                        style={{
+                          display: "block", width: "100%", textAlign: "left",
+                          padding: "10px 16px", border: "none", borderTop: `1px solid ${C.border}`,
+                          background: C.surface, color: C.text,
+                          fontSize: 13, fontWeight: 500, cursor: "pointer",
+                          transition: "background 0.1s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = C.blueLight)}
+                        onMouseLeave={e => (e.currentTarget.style.background = C.surface)}
+                      >
+                        {downloading ? "⏳ Downloaden…" : "⬇️ Download alle artikelen (ZIP)"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
