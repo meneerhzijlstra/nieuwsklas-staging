@@ -65,7 +65,7 @@ Regels: "correct" = 0-gebaseerde index, varieer het juiste antwoord, test begrip
 
     if (!response.ok) {
       console.error("Gemini fout:", JSON.stringify(data));
-      return res.status(500).json({ error: "AI aanroep mislukt", details: data });
+      return res.status(500).json({ error: "Uploaden mislukt", details: data });
     }
 
     // Tekst uit Gemini response halen
