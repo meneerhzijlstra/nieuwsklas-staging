@@ -1863,7 +1863,7 @@ function StudentView({ onBack }) {
       await DB.addSubmission(uc, name.trim(), b64, quiz);
       setStep("done");
     } catch (e) {
-      setError("Er ging iets mis: " + e.message);
+      setError("Uploaden mislukt. Controleer je verbinding en probeer opnieuw.");
       setStep("form");
     }
   };
