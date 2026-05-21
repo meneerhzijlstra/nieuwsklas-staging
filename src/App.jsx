@@ -1705,7 +1705,7 @@ function TeacherView({ teacher, onLogout }) {
 
             {/* Export dropdown */}
             {subs.length > 0 && (
-              <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8, flexDirection: isMobile ? "column" : "row" }}>
+              <div style={{ display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8, flexDirection: isMobile ? "column" : "row" }}>
                 <div style={{ fontSize: 13, color: C.sub }}>
                   {aantalGeselecteerd > 0
                     ? <span style={{ color: C.blue, fontWeight: 600 }}>{aantalGeselecteerd} vraag{aantalGeselecteerd !== 1 ? "en" : ""} geselecteerd</span>
