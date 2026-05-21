@@ -1899,11 +1899,6 @@ function StudentView({ onBack }) {
           <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: C.text }}>Nieuws inleveren</h2>
           <div style={{ fontSize: 13, color: C.sub }}>Upload een screenshot van een nieuwsartikel</div>
         </div>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", color: C.sub, cursor: "pointer", fontSize: 13 }}>
-            ← Terug naar startpagina
-          </button>
-        </div>
 
         <Card style={{ padding: "22px 20px" }}>
           <TextInput label="Klascode"
@@ -1964,6 +1959,12 @@ function StudentView({ onBack }) {
           <ErrorBox msg={error} />
           <PrimaryBtn full onClick={submit}>Inleveren →</PrimaryBtn>
         </Card>
+
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: C.sub, cursor: "pointer", fontSize: 13 }}>
+            ← Terug naar startpagina
+          </button>
+        </div>
       </div>
     </div>
   );
