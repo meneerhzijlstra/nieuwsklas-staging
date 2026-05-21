@@ -1734,11 +1734,11 @@ function TeacherView({ teacher, onLogout }) {
                   {showExportMenu && (
                     <div onClick={e => e.stopPropagation()} style={{
                       position: "absolute", top: "calc(100% + 6px)",
-                      right: isMobile ? "auto" : 0,
-                      left: isMobile ? 0 : "auto",
+                      right: 0,
+                      left: "auto",
                       background: C.surface, border: `1.5px solid ${C.border}`,
                       borderRadius: 12, boxShadow: "0 4px 20px rgba(15,21,35,0.12)",
-                      zIndex: 200, minWidth: isMobile ? "calc(100vw - 32px)" : 240, overflow: "hidden",
+                      zIndex: 200, width: isMobile ? "80vw" : 240, overflow: "hidden",
                     }}>
                       {/* Geselecteerde vragen exporteren */}
                       <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8 }}>
