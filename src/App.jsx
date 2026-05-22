@@ -1649,8 +1649,49 @@ function TeacherView({ teacher, onLogout }) {
                         padding: "10px 14px", borderBottom: `1px solid ${C.border}`,
                         fontSize: 11, fontWeight: 700, color: C.sub,
                         textTransform: "uppercase", letterSpacing: 0.8,
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
                       }}>
-                        Ingeleverd door
+                        <span>Ingeleverd door</span>
+                        <button
+                          title="Download namenlijst"
+                          onClick={e => {
+                            e.stopPropagation();
+                            // Sorteer op achternaam en maak CSV
+                            const gesorteerd = [...subs].sort((a, b) => {
+                              const achternaamA = a.student_name.trim().split(" ").pop().toLowerCase();
+                              const achternaamB = b.student_name.trim().split(" ").pop().toLowerCase();
+                              return achternaamA.localeCompare(achternaamB, "nl");
+                            });
+                            const regels = [
+                              `Klas: ${selected.name}`,
+                              `Datum: ${new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" })}`,
+                              `Aantal inleveringen: ${subs.length}`,
+                              "",
+                              "NR;ACHTERNAAM;VOORNAAM;TIJDSTIP",
+                              ...gesorteerd.map((s, i) => {
+                                const delen = s.student_name.trim().split(" ");
+                                const achternaam = delen.pop();
+                                const voornaam = delen.join(" ") || "-";
+                                const tijd = new Date(s.submitted_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                                return `${i + 1};${achternaam};${voornaam};${tijd}`;
+                              }),
+                            ].join("\n");
+                            const blob = new Blob(["\uFEFF" + regels], { type: "text/csv;charset=utf-8;" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `Namenlijst_${selected.name.replace(/\s+/g, "_")}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          style={{
+                            background: "transparent", border: "none",
+                            cursor: "pointer", fontSize: 14, padding: "2px 4px",
+                            borderRadius: 6, color: C.sub, lineHeight: 1,
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = C.blueLight; e.currentTarget.style.color = C.blue; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.sub; }}
+                        >⬇️</button>
                       </div>
                       {[...subs]
                         .sort((a, b) => {
