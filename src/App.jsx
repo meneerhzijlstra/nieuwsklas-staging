@@ -102,38 +102,17 @@ const DB = {
     });
   },
 
-  async uploadImage(base64, fileName) {
-    // Zet base64 om naar binary
-    const byteChars = atob(base64);
-    const byteArr = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
-    const blob = new Blob([byteArr], { type: "image/jpeg" });
-
-    const res = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/artikelen/${fileName}`,
-      {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "image/jpeg",
-          "Cache-Control": "3600",
-        },
-        body: blob,
-      }
-    );
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.message || "Upload mislukt");
-    }
-    // Geef de publieke URL terug
-    return `${SUPABASE_URL}/storage/v1/object/public/artikelen/${fileName}`;
-  },
-
   async addSubmission(roomCode, studentName, imageBase64, quiz) {
-    // Upload afbeelding naar Storage
-    const fileName = `${roomCode}/${Date.now()}_${studentName.replace(/\s+/g, "_")}.jpg`;
-    const imageUrl = await DB.uploadImage(imageBase64, fileName);
+    // Upload afbeelding naar Cloudinary via serverless functie
+    const fileName = `${roomCode}_${Date.now()}_${studentName.replace(/\s+/g, "_")}`;
+    const uploadRes = await fetch("/api/upload-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64, fileName }),
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) throw new Error(uploadData.error || "Upload mislukt");
+    const imageUrl = uploadData.url;
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
       method: "POST",
