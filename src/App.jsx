@@ -162,6 +162,7 @@ const Auth = {
     if (teacher.password_hash !== hash) return { error: "Onjuist wachtwoord." };
     if (teacher.status === "pending") return { error: "Je aanvraag is nog in behandeling. Je ontvangt een e-mail zodra je account is goedgekeurd." };
     if (teacher.status === "rejected") return { error: "Je aanvraag is helaas afgekeurd. Neem contact op met de beheerder voor meer informatie." };
+    if (teacher.status === "paused") return { error: "Je account is tijdelijk gepauzeerd. Neem contact op met de beheerder voor meer informatie." };
     return { ok: true, teacher };
   },
 };
@@ -2089,6 +2090,18 @@ function AdminView({ onBack }) {
       setConfirmDel(teacher);
       return;
     }
+    if (action === "pause" || action === "unpause") {
+      const res = await fetch("/api/admin-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminSecret, action, teacherId: teacher.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) return showToast("Actie mislukt: " + data.error, "error");
+      showToast(action === "pause" ? `⏸️ ${teacher.name} gepauzeerd` : `▶️ ${teacher.name} geheractiveerd`);
+      loadTeachers(adminSecret);
+      return;
+    }
     const res = await fetch("/api/admin-action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2121,7 +2134,12 @@ function AdminView({ onBack }) {
   const all = [...teachers].sort((a, b) => a.name.localeCompare(b.name, "nl"));
 
   const statusBadge = (s) => {
-    const map = { pending: ["#FEF9C3","#92400e","In behandeling"], active: [C.greenLight, C.green, "Actief"], rejected: [C.redLight, C.red, "Afgekeurd"] };
+    const map = {
+      pending: ["#FEF9C3","#92400e","In behandeling"],
+      active:  [C.greenLight, C.green, "Actief"],
+      rejected:[C.redLight, C.red, "Afgekeurd"],
+      paused:  ["#FEE2E2", "#b45309", "Gepauzeerd"],
+    };
     const [bg, col, label] = map[s] || [C.border, C.sub, s];
     return <span style={{ background:bg, color:col, borderRadius:99, padding:"2px 10px", fontSize:11, fontWeight:600 }}>{label}</span>;
   };
@@ -2235,7 +2253,17 @@ function AdminView({ onBack }) {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => doAction("delete", t)} style={{ background:C.redLight, color:C.red, border:`1.5px solid ${C.red}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>🗑 Verwijderen</button>
+                <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                  <button onClick={() => doAction(t.status === "paused" ? "unpause" : "pause", t)} style={{
+                    background: t.status === "paused" ? C.greenLight : "#FEF9C3",
+                    color: t.status === "paused" ? C.green : "#92400e",
+                    border: `1.5px solid ${t.status === "paused" ? C.green : "#FDE047"}`,
+                    borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer"
+                  }}>
+                    {t.status === "paused" ? "▶️ Heractiveren" : "⏸️ Pauzeren"}
+                  </button>
+                  <button onClick={() => doAction("delete", t)} style={{ background:C.redLight, color:C.red, border:`1.5px solid ${C.red}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:600, cursor:"pointer" }}>🗑 Verwijderen</button>
+                </div>
               </div>
             </Card>
           ))
