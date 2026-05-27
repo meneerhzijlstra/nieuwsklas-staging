@@ -62,6 +62,21 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // Pauzeren of heractiveren
+  if (action === "pause" || action === "unpause") {
+    const newStatus = action === "pause" ? "paused" : "active";
+    const now = new Date().toISOString();
+    await fetch(`${SUPABASE_URL}/rest/v1/teachers?id=eq.${teacherId}`, {
+      method: "PATCH",
+      headers: { ...headers, "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        status: newStatus,
+        paused_at: action === "pause" ? now : null,
+      }),
+    });
+    return res.status(200).json({ ok: true });
+  }
+
   // Goedkeuren of afkeuren
   if (action !== "approve" && action !== "reject") {
     return res.status(400).json({ error: "Ongeldige actie" });
