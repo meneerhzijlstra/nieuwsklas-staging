@@ -1271,9 +1271,9 @@ function InfoPage({ onBack }) {
           <p style={{ textAlign: "center", color: C.sub, fontSize: 14, marginBottom: 32 }}>Een overzicht van de belangrijkste schermen</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
-              { src: "/screenshots/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
-              { src: "/screenshots/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
-              { src: "/screenshots/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
+              { src: "/public/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
+              { src: "/public/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
+              { src: "/public/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
             ].map((s, i) => (
               <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(15,21,35,0.08)" }}>
                 <img src={s.src} alt={s.caption} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 200 }} />
