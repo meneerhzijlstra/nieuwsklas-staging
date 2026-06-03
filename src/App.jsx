@@ -1272,8 +1272,8 @@ function InfoPage({ onBack }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
               { src: "/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
-              { src: "/public/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
-              { src: "/public/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
+              { src: "/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
+              { src: "/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
             ].map((s, i) => (
               <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(15,21,35,0.08)" }}>
                 <img src={s.src} alt={s.caption} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 200 }} />
