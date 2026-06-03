@@ -1271,7 +1271,7 @@ function InfoPage({ onBack }) {
           <p style={{ textAlign: "center", color: C.sub, fontSize: 14, marginBottom: 32 }}>Een overzicht van de belangrijkste schermen</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
-              { src: "/public/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
+              { src: "/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
               { src: "/public/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
               { src: "/public/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
             ].map((s, i) => (
