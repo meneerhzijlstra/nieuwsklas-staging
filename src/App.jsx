@@ -1242,6 +1242,8 @@ function Logo({ right }) {
 }
 
 function InfoPage({ onBack }) {
+  const [enlargedImg, setEnlargedImg] = useState(null);
+
   const sections = [
     { icon: "🏫", title: "Wat is NieuwsKlas?", text: "NieuwsKlas is een online omgeving waarin leerlingen nieuwsartikelen verzamelen en inleveren binnen een digitale klas. Elke klas heeft een unieke code die de docent deelt met leerlingen, zodat zij eenvoudig kunnen deelnemen. Op basis van de ingeleverde artikelen helpt het platform docenten automatisch bij het maken van toetsvragen. Bij elk artikel genereert NieuwsKlas vier mogelijke meerkeuzevragen, die direct als bouwstenen dienen voor een toets." },
     { icon: "⚙️", title: "Wat kun je met NieuwsKlas?", items: ["Toetsen aanmaken en beheren met een unieke toegangscode", "Toetsen structureren met mappen per klas, hoofdstuk of periode", "Inleveringen per klas bekijken", "Automatisch vier meerkeuzevragen genereren per artikel", "Zelf toetsen samenstellen uit ingeleverd materiaal", "Inlevermomenten sturen door toetsen te pauzeren of openen", "Leerlinglijsten exporteren als overzicht", "Toetsen exporteren naar Word (papier) of CSV (digitaal, bijv. Kwizl)"] },
@@ -1250,8 +1252,26 @@ function InfoPage({ onBack }) {
     { icon: "⭐", title: "Waarom NieuwsKlas?", items: ["Toetsen sluiten direct aan op wat leerlingen zelf hebben ingebracht", "Docenten werken efficiënt met automatisch gegenereerde vragen", "Overzichtelijke organisatie via mappen", "Flexibele controle over inlevermomenten per klas", "Inzicht in deelname via exporteerbare leerlinglijsten", "Leerlingen worden actiever betrokken bij actuele onderwerpen"] },
   ];
 
+  const screenshots = [
+    { src: "/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
+    { src: "/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
+    { src: "/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
+  ];
+
   return (
     <div style={{ flex: 1, overflowY: "auto", background: C.bg }}>
+
+      {/* Afbeelding modal */}
+      {enlargedImg && (
+        <div onClick={() => setEnlargedImg(null)} style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(15,21,35,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(4px)", cursor: "zoom-out" }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: "relative", maxWidth: 960, width: "100%" }}>
+            <img src={enlargedImg.src} alt={enlargedImg.caption} style={{ width: "100%", borderRadius: 12, display: "block", boxShadow: "0 24px 64px rgba(15,21,35,0.4)" }} />
+            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 12 }}>{enlargedImg.caption}</div>
+            <button onClick={() => setEnlargedImg(null)} style={{ position: "absolute", top: -12, right: -12, width: 36, height: 36, borderRadius: 99, background: C.white, border: "none", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(15,21,35,0.2)" }}>✕</button>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <div style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, padding: "60px 24px 48px", textAlign: "center" }}>
         <div style={{ fontSize: 56, marginBottom: 16 }}>📰</div>
@@ -1268,15 +1288,22 @@ function InfoPage({ onBack }) {
       <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "40px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 8 }}>Zo ziet NieuwsKlas eruit</h2>
-          <p style={{ textAlign: "center", color: C.sub, fontSize: 14, marginBottom: 32 }}>Een overzicht van de belangrijkste schermen</p>
+          <p style={{ textAlign: "center", color: C.sub, fontSize: 14, marginBottom: 32 }}>Klik op een afbeelding om deze groter te bekijken</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-            {[
-              { src: "/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
-              { src: "/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
-              { src: "/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
-            ].map((s, i) => (
-              <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(15,21,35,0.08)" }}>
-                <img src={s.src} alt={s.caption} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 200 }} />
+            {screenshots.map((s, i) => (
+              <div key={i} onClick={() => setEnlargedImg(s)} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(15,21,35,0.08)", cursor: "zoom-in", transition: "transform 0.15s, box-shadow 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(59,111,240,0.15)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(15,21,35,0.08)"; }}
+              >
+                <div style={{ position: "relative" }}>
+                  <img src={s.src} alt={s.caption} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 200 }} />
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(59,111,240,0)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(59,111,240,0.25)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "rgba(59,111,240,0)"}
+                  >
+                    <span style={{ background: "rgba(255,255,255,0.9)", color: C.blue, borderRadius: 99, padding: "6px 14px", fontSize: 12, fontWeight: 700 }}>🔍 Vergroten</span>
+                  </div>
+                </div>
                 <div style={{ padding: "12px 14px", fontSize: 13, color: C.sub, background: C.surfaceAlt }}>{s.caption}</div>
               </div>
             ))}
@@ -1322,9 +1349,7 @@ function InfoPage({ onBack }) {
           <div style={{ fontSize: 28, marginBottom: 12 }}>🚀</div>
           <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Klaar om te beginnen?</div>
           <p style={{ margin: "0 0 20px", opacity: 0.9, fontSize: 14 }}>NieuwsKlas maakt van leerlinginbreng een krachtig hulpmiddel voor zowel leren als toetsen.</p>
-          <button onClick={onBack} style={{ background: C.white, color: C.blue, border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-            Aan de slag →
-          </button>
+          <button onClick={onBack} style={{ background: C.white, color: C.blue, border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>Aan de slag →</button>
         </div>
       </div>
     </div>
@@ -1368,8 +1393,8 @@ export default function App() {
   if (page === "info") return shell(<Logo right={<GhostBtn onClick={() => navigate("landing")} style={{ fontSize: 12 }}>← Startpagina</GhostBtn>} />, <InfoPage onBack={() => navigate("landing")} />);
   return shell(
     <Logo right={
-      <button onClick={() => navigate("info")} style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, border: "none", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(59,111,240,0.25)", whiteSpace: "nowrap" }}>
-        ✨ Nog geen gebruiker? Ontdek NieuwsKlas
+      <button onClick={() => navigate("info")} style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, border: "none", borderRadius: 99, padding: window.innerWidth < 640 ? "6px 10px" : "8px 16px", fontSize: window.innerWidth < 640 ? 11 : 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(59,111,240,0.25)", whiteSpace: "nowrap", maxWidth: window.innerWidth < 640 ? 140 : "none", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {window.innerWidth < 640 ? "✨ Ontdek NieuwsKlas" : "✨ Nog geen gebruiker? Ontdek NieuwsKlas"}
       </button>
     } />,
     <Landing onGo={navigate} onInfo={() => navigate("info")} />
