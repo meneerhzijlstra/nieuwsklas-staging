@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 const SUPABASE_URL = "https://vjgvlgwetrgikrlkqvrn.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqZ3ZsZ3dldHJnaWtybGtxdnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMzc0MzYsImV4cCI6MjA5MzgxMzQzNn0.Vp4VqMKjCwE1PCu_ogUe537LrCepNzo8E-_GYr6LMNc";
 
-
 const headers = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
@@ -826,7 +825,7 @@ function TeacherView({ teacher, onLogout }) {
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{ width: 72, height: 72, borderRadius: 20, background: C.blueLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📚</div>
-            <div style={{ fontWeight: 700, fontSize: 20, color: C.text }}>Selecteer een klas</div>
+            <div style={{ fontWeight: 700, fontSize: 20, color: C.text }}>Selecteer een eerder aangemaakte toets</div>
             {rooms.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 320 }}>
                 {rooms.map(room => (
@@ -1242,7 +1241,97 @@ function Logo({ right }) {
   );
 }
 
-function Landing({ onGo }) {
+function InfoPage({ onBack }) {
+  const sections = [
+    { icon: "🏫", title: "Wat is NieuwsKlas?", text: "NieuwsKlas is een online omgeving waarin leerlingen nieuwsartikelen verzamelen en inleveren binnen een digitale klas. Elke klas heeft een unieke code die de docent deelt met leerlingen, zodat zij eenvoudig kunnen deelnemen. Op basis van de ingeleverde artikelen helpt het platform docenten automatisch bij het maken van toetsvragen. Bij elk artikel genereert NieuwsKlas vier mogelijke meerkeuzevragen, die direct als bouwstenen dienen voor een toets." },
+    { icon: "⚙️", title: "Wat kun je met NieuwsKlas?", items: ["Toetsen aanmaken en beheren met een unieke toegangscode", "Toetsen structureren met mappen per klas, hoofdstuk of periode", "Inleveringen per klas bekijken", "Automatisch vier meerkeuzevragen genereren per artikel", "Zelf toetsen samenstellen uit ingeleverd materiaal", "Inlevermomenten sturen door toetsen te pauzeren of openen", "Leerlinglijsten exporteren als overzicht", "Toetsen exporteren naar Word (papier) of CSV (digitaal, bijv. Kwizl)"] },
+    { icon: "👥", title: "Voor wie is NieuwsKlas?", items: ["Docenten in het voortgezet onderwijs en mbo", "Vakken zoals maatschappijleer, burgerschap en geschiedenis", "Scholen die efficiënt willen werken met actualiteit én toetsing"] },
+    { icon: "🔄", title: "Hoe werkt het?", steps: ["Docent maakt een toets aan en deelt de unieke code met leerlingen.", "Leerlingen leveren nieuwsartikelen in binnen hun klas.", "NieuwsKlas genereert automatisch vier meerkeuzevragen per artikel.", "Docent selecteert geschikte vragen en stelt de toets samen.", "De toets wordt geëxporteerd naar Word of CSV voor gebruik."] },
+    { icon: "⭐", title: "Waarom NieuwsKlas?", items: ["Toetsen sluiten direct aan op wat leerlingen zelf hebben ingebracht", "Docenten werken efficiënt met automatisch gegenereerde vragen", "Overzichtelijke organisatie via mappen", "Flexibele controle over inlevermomenten per klas", "Inzicht in deelname via exporteerbare leerlinglijsten", "Leerlingen worden actiever betrokken bij actuele onderwerpen"] },
+  ];
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", background: C.bg }}>
+      {/* Hero */}
+      <div style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, padding: "60px 24px 48px", textAlign: "center" }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>📰</div>
+        <h1 style={{ margin: "0 0 12px", fontSize: 36, fontWeight: 800, letterSpacing: -0.5 }}>Welkom bij NieuwsKlas</h1>
+        <p style={{ margin: "0 auto", fontSize: 18, maxWidth: 600, opacity: 0.9, lineHeight: 1.6 }}>
+          NieuwsKlas is een digitaal platform dat actualiteit en toetsing slim met elkaar verbindt. Het biedt docenten de mogelijkheid om op een eenvoudige en efficiënte manier toetsen te maken op basis van nieuwsartikelen die door leerlingen zijn ingeleverd.
+        </p>
+        <p style={{ margin: "16px auto 0", fontSize: 15, maxWidth: 540, opacity: 0.8, lineHeight: 1.6 }}>
+          Zo wordt werken met actuele onderwerpen niet alleen leerzaam, maar ook direct inzetbaar in de beoordeling.
+        </p>
+      </div>
+
+      {/* Screenshots */}
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "40px 24px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 8 }}>Zo ziet NieuwsKlas eruit</h2>
+          <p style={{ textAlign: "center", color: C.sub, fontSize: 14, marginBottom: 32 }}>Een overzicht van de belangrijkste schermen</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+            {[
+              { src: "/screenshots/Nieuwsklas_1.png", caption: "Overzicht van toetsen in de zijbalk, georganiseerd per map" },
+              { src: "/screenshots/Nieuwsklas_2.png", caption: "Inleveringen bekijken met automatisch gegenereerde vragen" },
+              { src: "/screenshots/Nieuwsklas_3.png", caption: "Artikel en antwoorden bekijken in de detailweergave" },
+            ].map((s, i) => (
+              <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(15,21,35,0.08)" }}>
+                <img src={s.src} alt={s.caption} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 200 }} />
+                <div style={{ padding: "12px 14px", fontSize: 13, color: C.sub, background: C.surfaceAlt }}>{s.caption}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Content sections */}
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "40px 24px" }}>
+        {sections.map((s, i) => (
+          <div key={i} style={{ marginBottom: 40 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: C.blueLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{s.icon}</div>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: C.text }}>{s.title}</h2>
+            </div>
+            {s.text && <p style={{ margin: 0, fontSize: 15, color: C.sub, lineHeight: 1.8 }}>{s.text}</p>}
+            {s.items && (
+              <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                {s.items.map((item, j) => (
+                  <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 15, color: C.sub, lineHeight: 1.6 }}>
+                    <span style={{ color: C.blue, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {s.steps && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {s.steps.map((step, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 99, background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{j + 1}</div>
+                    <p style={{ margin: 0, fontSize: 15, color: C.sub, lineHeight: 1.6, paddingTop: 3 }}>{step}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {i < sections.length - 1 && <div style={{ height: 1, background: C.border, marginTop: 40 }} />}
+          </div>
+        ))}
+
+        {/* CTA */}
+        <div style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, borderRadius: 16, padding: "32px 28px", textAlign: "center", color: C.white, marginTop: 20 }}>
+          <div style={{ fontSize: 28, marginBottom: 12 }}>🚀</div>
+          <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 8 }}>Klaar om te beginnen?</div>
+          <p style={{ margin: "0 0 20px", opacity: 0.9, fontSize: 14 }}>NieuwsKlas maakt van leerlinginbreng een krachtig hulpmiddel voor zowel leren als toetsen.</p>
+          <button onClick={onBack} style={{ background: C.white, color: C.blue, border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+            Aan de slag →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Landing({ onGo, onInfo }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, padding: 32, background: C.bg }}>
       <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg,${C.blue},${C.blueDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, boxShadow: "0 4px 16px rgba(59,111,240,0.3)" }}>📰</div>
@@ -1263,7 +1352,7 @@ function Landing({ onGo }) {
 }
 
 export default function App() {
-  const getPage = () => { try { const p = new URLSearchParams(window.location.search).get("page"); if (p === "teacher" || p === "student" || p === "admin") return p; } catch {} return "landing"; };
+  const getPage = () => { try { const p = new URLSearchParams(window.location.search).get("page"); if (p === "teacher" || p === "student" || p === "admin" || p === "info") return p; } catch {} return "landing"; };
   const [page, setPage] = useState(getPage);
   const navigate = (p) => { try { const url = new URL(window.location.href); if (p === "landing") url.searchParams.delete("page"); else url.searchParams.set("page", p); window.history.pushState({}, "", url); } catch {} setPage(p); };
   const shell = (header, content) => (
@@ -1276,5 +1365,13 @@ export default function App() {
   if (page === "admin") return shell(<Logo right={<GhostBtn onClick={() => navigate("landing")} style={{ fontSize: 12 }}>← Startpagina</GhostBtn>} />, <AdminView onBack={() => navigate("landing")} />);
   if (page === "teacher") return shell(<Logo right={<GhostBtn onClick={() => navigate("landing")} style={{ fontSize: 12 }}>← Startpagina</GhostBtn>} />, <TeacherAuthGate onBack={() => navigate("landing")} />);
   if (page === "student") return shell(<Logo />, <StudentView onBack={() => navigate("landing")} />);
-  return shell(<Logo />, <Landing onGo={navigate} />);
+  if (page === "info") return shell(<Logo right={<GhostBtn onClick={() => navigate("landing")} style={{ fontSize: 12 }}>← Startpagina</GhostBtn>} />, <InfoPage onBack={() => navigate("landing")} />);
+  return shell(
+    <Logo right={
+      <button onClick={() => navigate("info")} style={{ background: `linear-gradient(135deg, ${C.blue}, ${C.blueDark})`, color: C.white, border: "none", borderRadius: 99, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(59,111,240,0.25)", whiteSpace: "nowrap" }}>
+        ✨ Nog geen gebruiker? Ontdek NieuwsKlas
+      </button>
+    } />,
+    <Landing onGo={navigate} onInfo={() => navigate("info")} />
+  );
 }
