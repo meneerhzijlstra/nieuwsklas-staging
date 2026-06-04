@@ -443,6 +443,8 @@ function TeacherView({ teacher, onLogout }) {
   const [exportZipLoading, setExportZipLoading] = useState(false);
   const mainRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
+  const isMobile = window.innerWidth < 640;
+  const [showSidebar, setShowSidebar] = useState(!isMobile);
   // Mappen state
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -722,8 +724,6 @@ function TeacherView({ teacher, onLogout }) {
   };
 
   if (loading) return <Spinner label="Klassen laden…" />;
-  const isMobile = window.innerWidth < 640;
-  const [showSidebar, setShowSidebar] = useState(!isMobile);
 
   // Room card helper
   const RoomCard = ({ room, inFolder = false }) => (
