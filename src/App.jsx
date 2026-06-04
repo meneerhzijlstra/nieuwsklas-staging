@@ -797,7 +797,7 @@ function TeacherView({ teacher, onLogout }) {
           )}
 
           {/* Mappen */}
-          {!isMobile && folders.map(folder => (
+          {folders.map(folder => (
             <div key={folder.id} onDragOver={e => handleDragOverFolder(e, folder.id)} onDrop={e => handleDropOnFolder(e, folder.id)} style={{ marginBottom: 6, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${dragOverFolder === folder.id ? C.blue : C.border}`, background: dragOverFolder === folder.id ? C.blueLight : C.surfaceAlt, transition: "border-color 0.15s" }}>
               <div style={{ display: "flex", alignItems: "center", padding: "8px 10px", gap: 6 }}>
                 <span onClick={() => toggleFolderCollapse(folder.id)} style={{ cursor: "pointer", fontSize: 11, color: C.sub, flexShrink: 0 }}>{collapsedFolders[folder.id] ? "▶" : "▼"}</span>
