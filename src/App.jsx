@@ -723,10 +723,11 @@ function TeacherView({ teacher, onLogout }) {
 
   if (loading) return <Spinner label="Klassen laden…" />;
   const isMobile = window.innerWidth < 640;
+  const [showSidebar, setShowSidebar] = useState(!isMobile);
 
   // Room card helper
   const RoomCard = ({ room, inFolder = false }) => (
-    <div key={room.id} draggable onDragStart={e => handleDragStart(e, room)} onDragEnd={handleDragEnd} onClick={() => selectRoom(room)} style={{ padding: inFolder ? "7px 10px" : (isMobile ? "8px 12px" : "10px 12px"), borderRadius: 10, marginBottom: inFolder ? 3 : (isMobile ? 0 : 4), flexShrink: isMobile && !inFolder ? 0 : undefined, cursor: "pointer", background: selected?.id === room.id ? C.blueLight : (isMobile && !inFolder ? C.surfaceAlt : (inFolder ? C.surface : "transparent")), border: `1.5px solid ${selected?.id === room.id ? C.blue : (isMobile || inFolder ? C.border : "transparent")}`, opacity: room.paused ? 0.7 : 1, minWidth: isMobile && !inFolder ? 140 : undefined, transition: "all 0.15s" }}>
+    <div key={room.id} draggable onDragStart={e => handleDragStart(e, room)} onDragEnd={handleDragEnd} onClick={() => selectRoom(room)} style={{ padding: inFolder ? "7px 10px" : "10px 12px", borderRadius: 10, marginBottom: inFolder ? 3 : 4, cursor: "pointer", background: selected?.id === room.id ? C.blueLight : (inFolder ? C.surface : "transparent"), border: `1.5px solid ${selected?.id === room.id ? C.blue : (inFolder ? C.border : "transparent")}`, opacity: room.paused ? 0.7 : 1, transition: "all 0.15s" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontWeight: 600, fontSize: inFolder ? 13 : 14, color: selected?.id === room.id ? C.blue : C.text, display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 10, color: C.sub, cursor: "grab" }}>⠿</span>
@@ -744,8 +745,41 @@ function TeacherView({ teacher, onLogout }) {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", flex: 1, overflow: "hidden" }}>
-      <aside style={{ width: isMobile ? "100%" : 256, background: C.surface, borderRight: isMobile ? "none" : `1px solid ${C.border}`, borderBottom: isMobile ? `1px solid ${C.border}` : "none", display: "flex", flexDirection: "column", flexShrink: 0, maxHeight: isMobile ? "none" : "100%" }}>
+    <div style={{ display: "flex", flexDirection: "row", flex: 1, overflow: "hidden", position: "relative" }}>
+
+      {/* Sidebar toggle knop — altijd zichtbaar */}
+      <button
+        onClick={() => setShowSidebar(s => !s)}
+        title={showSidebar ? "Zijbalk verbergen" : "Zijbalk tonen"}
+        style={{
+          position: "absolute", top: 12,
+          left: showSidebar ? (isMobile ? "calc(100vw - 40px)" : 244) : 8,
+          zIndex: 300, width: 32, height: 32, borderRadius: 99,
+          background: C.surface, border: `1.5px solid ${C.border}`,
+          cursor: "pointer", fontSize: 14, display: "flex",
+          alignItems: "center", justifyContent: "center",
+          boxShadow: "0 2px 8px rgba(15,21,35,0.1)",
+          transition: "left 0.25s",
+          color: C.sub,
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; }}
+      >{showSidebar ? "◀" : "▶"}</button>
+
+      {/* Sidebar */}
+      <aside style={{
+        width: showSidebar ? (isMobile ? "100vw" : 256) : 0,
+        minWidth: showSidebar ? (isMobile ? "100vw" : 256) : 0,
+        background: C.surface,
+        borderRight: `1px solid ${C.border}`,
+        display: "flex", flexDirection: "column", flexShrink: 0,
+        overflow: "hidden",
+        transition: "width 0.25s, min-width 0.25s",
+        maxHeight: "100%",
+        position: isMobile && showSidebar ? "absolute" : "relative",
+        top: 0, left: 0, bottom: 0,
+        zIndex: isMobile && showSidebar ? 200 : "auto",
+      }}>
         <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>Mijn klassen</div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -757,7 +791,7 @@ function TeacherView({ teacher, onLogout }) {
           </div>
         </div>
 
-        <div style={{ flex: isMobile ? "none" : 1, overflowY: isMobile ? "hidden" : "auto", overflowX: isMobile ? "auto" : "hidden", padding: isMobile ? "8px 8px" : "8px 8px 0", display: isMobile ? "flex" : "block", flexDirection: isMobile ? "row" : undefined, gap: isMobile ? 6 : undefined, WebkitOverflowScrolling: "touch" }}>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "8px 8px 0", WebkitOverflowScrolling: "touch" }}>
           {rooms.length === 0 && folders.length === 0 && !creating && (
             <div style={{ textAlign: "center", padding: "32px 12px", color: C.sub, fontSize: 13 }}>Nog geen klassen.<br />Maak er een aan ↓</div>
           )}
@@ -802,26 +836,29 @@ function TeacherView({ teacher, onLogout }) {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <button onClick={() => setCreating(true)} style={{ width: isMobile ? "auto" : "100%", flexShrink: 0, background: "transparent", border: `1.5px dashed ${C.border}`, borderRadius: 10, padding: isMobile ? "8px 12px" : "10px", color: C.sub, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", whiteSpace: "nowrap" }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; e.currentTarget.style.background = C.blueLight; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; e.currentTarget.style.background = "transparent"; }}>+ Nieuwe klas</button>
-              {!isMobile && (
-                creatingFolder ? (
-                  <div>
-                    <input autoFocus value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") createFolder(); if (e.key === "Escape") setCreatingFolder(false); }} placeholder="Naam van de map…" style={{ width: "100%", border: `1.5px solid ${C.blue}`, borderRadius: 10, padding: "9px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: C.text, marginBottom: 8, boxShadow: `0 0 0 3px ${C.blueLight}` }} />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <PrimaryBtn small onClick={createFolder} style={{ flex: 1 }}>Map aanmaken</PrimaryBtn>
-                      <GhostBtn onClick={() => setCreatingFolder(false)} style={{ flex: 1, padding: "8px 12px" }}>Annuleer</GhostBtn>
-                    </div>
+              <button onClick={() => setCreating(true)} style={{ width: "100%", flexShrink: 0, background: "transparent", border: `1.5px dashed ${C.border}`, borderRadius: 10, padding: "10px", color: C.sub, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", whiteSpace: "nowrap" }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; e.currentTarget.style.background = C.blueLight; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; e.currentTarget.style.background = "transparent"; }}>+ Nieuwe klas</button>
+              {creatingFolder ? (
+                <div>
+                  <input autoFocus value={newFolderName} onChange={e => setNewFolderName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") createFolder(); if (e.key === "Escape") setCreatingFolder(false); }} placeholder="Naam van de map…" style={{ width: "100%", border: `1.5px solid ${C.blue}`, borderRadius: 10, padding: "9px 12px", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: C.text, marginBottom: 8, boxShadow: `0 0 0 3px ${C.blueLight}` }} />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <PrimaryBtn small onClick={createFolder} style={{ flex: 1 }}>Map aanmaken</PrimaryBtn>
+                    <GhostBtn onClick={() => setCreatingFolder(false)} style={{ flex: 1, padding: "8px 12px" }}>Annuleer</GhostBtn>
                   </div>
-                ) : (
-                  <button onClick={() => setCreatingFolder(true)} style={{ width: "100%", background: "transparent", border: `1.5px dashed ${C.border}`, borderRadius: 10, padding: "10px", color: C.sub, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; e.currentTarget.style.background = C.blueLight; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; e.currentTarget.style.background = "transparent"; }}>📁 Nieuwe map</button>
-                )
+                </div>
+              ) : (
+                <button onClick={() => setCreatingFolder(true)} style={{ width: "100%", background: "transparent", border: `1.5px dashed ${C.border}`, borderRadius: 10, padding: "10px", color: C.sub, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; e.currentTarget.style.background = C.blueLight; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; e.currentTarget.style.background = "transparent"; }}>📁 Nieuwe map</button>
               )}
             </div>
           )}
         </div>
       </aside>
 
-      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: isMobile ? 16 : 28, background: C.bg, position: "relative" }}>
+      {/* Overlay voor mobiel als sidebar open is */}
+      {isMobile && showSidebar && (
+        <div onClick={() => setShowSidebar(false)} style={{ position: "absolute", inset: 0, zIndex: 199, background: "rgba(15,21,35,0.35)" }} />
+      )}
+
+      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 20, paddingLeft: showSidebar && !isMobile ? 20 : 52, background: C.bg, position: "relative", transition: "padding-left 0.25s" }}>
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{ width: 72, height: 72, borderRadius: 20, background: C.blueLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📚</div>
