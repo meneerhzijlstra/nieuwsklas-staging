@@ -1069,16 +1069,6 @@ function StudentView({ onBack }) {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
 
-  // Laad Google Ads script alleen op de leerlingpagina
-  useEffect(() => {
-    if (document.querySelector('script[src*="adsbygoogle"]')) return;
-    const script = document.createElement("script");
-    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3911697293589558";
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    document.head.appendChild(script);
-  }, []);
-
   const handleFile = f => { if (!f) return; setFile(f); const r = new FileReader(); r.onload = e => setPreview(e.target.result); r.readAsDataURL(f); };
 
   const submit = async () => {
