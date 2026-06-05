@@ -747,38 +747,41 @@ function TeacherView({ teacher, onLogout }) {
   return (
     <div style={{ display: "flex", flexDirection: "row", flex: 1, overflow: "hidden", position: "relative" }}>
 
-      {/* Sidebar toggle knop — altijd zichtbaar */}
-      <button
-        onClick={() => setShowSidebar(s => !s)}
-        title={showSidebar ? "Zijbalk verbergen" : "Zijbalk tonen"}
-        style={{
-          position: "absolute", top: 12,
-          left: showSidebar ? (isMobile ? "calc(100vw - 40px)" : 244) : 8,
-          zIndex: 300, width: 32, height: 32, borderRadius: 99,
-          background: C.surface, border: `1.5px solid ${C.border}`,
-          cursor: "pointer", fontSize: 14, display: "flex",
-          alignItems: "center", justifyContent: "center",
-          boxShadow: "0 2px 8px rgba(15,21,35,0.1)",
-          transition: "left 0.25s",
-          color: C.sub,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; }}
-      >{showSidebar ? "◀" : "▶"}</button>
+      {/* Sidebar toggle — op desktop links zwevend, op mobiel als overlay trigger */}
+      {!isMobile && (
+        <button
+          onClick={() => setShowSidebar(s => !s)}
+          title={showSidebar ? "Zijbalk verbergen" : "Zijbalk tonen"}
+          style={{
+            position: "absolute", top: 12,
+            left: showSidebar ? 244 : 8,
+            zIndex: 300, width: 32, height: 32, borderRadius: 99,
+            background: C.surface, border: `1.5px solid ${C.border}`,
+            cursor: "pointer", fontSize: 14, display: "flex",
+            alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(15,21,35,0.1)",
+            transition: "left 0.25s",
+            color: C.sub,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = C.blue; e.currentTarget.style.color = C.blue; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.sub; }}
+        >{showSidebar ? "◀" : "▶"}</button>
+      )}
 
       {/* Sidebar */}
       <aside style={{
-        width: showSidebar ? (isMobile ? "100vw" : 256) : 0,
-        minWidth: showSidebar ? (isMobile ? "100vw" : 256) : 0,
+        width: showSidebar ? (isMobile ? "80vw" : 256) : 0,
+        minWidth: showSidebar ? (isMobile ? "80vw" : 256) : 0,
         background: C.surface,
         borderRight: `1px solid ${C.border}`,
         display: "flex", flexDirection: "column", flexShrink: 0,
         overflow: "hidden",
         transition: "width 0.25s, min-width 0.25s",
         maxHeight: "100%",
-        position: isMobile && showSidebar ? "absolute" : "relative",
+        position: isMobile ? "absolute" : "relative",
         top: 0, left: 0, bottom: 0,
-        zIndex: isMobile && showSidebar ? 200 : "auto",
+        zIndex: isMobile ? 200 : "auto",
+        height: isMobile ? "100%" : "auto",
       }}>
         <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>Mijn klassen</div>
@@ -853,12 +856,36 @@ function TeacherView({ teacher, onLogout }) {
         </div>
       </aside>
 
-      {/* Overlay voor mobiel als sidebar open is */}
+      {/* Mobiele balk bovenaan met sidebar knop */}
+      {isMobile && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, zIndex: 300,
+          background: C.surface, borderBottom: `1px solid ${C.border}`,
+          padding: "8px 12px", display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <button
+            onClick={() => setShowSidebar(s => !s)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: C.blueLight, color: C.blue,
+              border: `1.5px solid ${C.blue}`, borderRadius: 8,
+              padding: "6px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            ☰ Mijn toetsen
+          </button>
+          {selected && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {selected.name}
+            </span>
+          )}
+        </div>
+      )}
       {isMobile && showSidebar && (
         <div onClick={() => setShowSidebar(false)} style={{ position: "absolute", inset: 0, zIndex: 199, background: "rgba(15,21,35,0.35)" }} />
       )}
 
-      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 20, paddingLeft: showSidebar && !isMobile ? 20 : 52, background: C.bg, position: "relative", transition: "padding-left 0.25s" }}>
+      <main id="teacher-main" ref={mainRef} onScroll={handleScroll} style={{ flex: 1, overflowY: "auto", padding: 20, paddingTop: isMobile ? 60 : 20, paddingLeft: !isMobile && !showSidebar ? 52 : 20, background: C.bg, position: "relative", transition: "padding-left 0.25s" }}>
         {!selected ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16 }}>
             <div style={{ width: 72, height: 72, borderRadius: 20, background: C.blueLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📚</div>
